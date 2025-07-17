@@ -27,7 +27,7 @@ This architecture enables:
 - **🛡️ Production Ready** - Error handling, timeouts, goroutine safety
 - **🔌 True Offline** - Direct model execution without external dependencies
 
-> **Note**: Currently in transition from HTTP-based (Ollama API) to true offline architecture. Some features may still require Ollama server until migration is complete.
+✅ **Fully Offline**: No external dependencies or servers required - models run directly in-process.
 
 ## 📦 Installation
 
@@ -42,12 +42,22 @@ package main
 
 import (
     "fmt"
+    "log"
     "github.com/jrschumacher/chanollama"
 )
 
 func main() {
-    // Create client (assumes Ollama running on localhost:11434)
-    client := chanollama.New("llama2:7b")
+    // Create offline client with direct model file
+    config := &chanollama.Config{
+        ModelPath:   "/path/to/model.gguf",
+        OfflineMode: true,
+        Temperature: 0.7,
+    }
+    
+    client, err := chanollama.NewOfflineClient(config)
+    if err != nil {
+        log.Fatalf("Failed to create offline client: %v", err)
+    }
     defer client.Close()
 
     // Simple chat
@@ -74,7 +84,11 @@ func main() {
 ### 🔄 Channel-Based Streaming
 
 ```go
-engine := chanollama.NewStreamingEngine("llama2:7b")
+engine, err := chanollama.NewOfflineEngine("/path/to/model.gguf")
+if err != nil {
+    log.Fatalf("Failed to create offline engine: %v", err)
+}
+defer engine.Close()
 
 // Get channels for tokens and errors
 tokenCh, errorCh := engine.ChatStreamChan(messages)
@@ -99,6 +113,16 @@ for {
 ### 🧠 Context-Aware Conversations
 
 ```go
+// Create offline client
+client, err := chanollama.NewOfflineClient(&chanollama.Config{
+    ModelPath: "/path/to/model.gguf",
+    OfflineMode: true,
+})
+if err != nil {
+    log.Fatal(err)
+}
+defer client.Close()
+
 // Automatic conversation management
 conversation := chanollama.NewConversation()
 conversation.AddSystemMessage("You are a helpful coding assistant.")
@@ -130,7 +154,11 @@ response, _ := client.Chat(messages)
 
 ```go
 // Handle multiple conversations simultaneously
-streamer := chanollama.NewConcurrentStreamer("llama2:7b", 5) // Max 5 concurrent
+streamer, err := chanollama.NewOfflineConcurrentStreamer("/path/to/model.gguf", 5) // Max 5 concurrent
+if err != nil {
+    log.Fatal(err)
+}
+defer streamer.Close()
 
 var wg sync.WaitGroup
 for _, question := range questions {
@@ -150,6 +178,13 @@ wg.Wait()
 ### 📦 Token Batching
 
 ```go
+// Create offline engine
+engine, err := chanollama.NewOfflineEngine("/path/to/model.gguf")
+if err != nil {
+    log.Fatal(err)
+}
+defer engine.Close()
+
 // Batch tokens for efficient processing
 batcher := chanollama.NewTokenBatcher(5, 50*time.Millisecond)
 tokenCh, _ := engine.ChatStreamChan(messages)
@@ -167,27 +202,44 @@ for batch := range batchCh {
 
 ```go
 config := chanollama.Config{
-    Model:       "llama2:7b",
+    ModelPath:   "/path/to/model.gguf",
+    OfflineMode: true,
     Timeout:     30 * time.Second,
     MaxTokens:   2048,
     Temperature: 0.7,
+    UseGPU:      false,
+    NumThreads:  4,
+    ContextSize: 4096,
 }
 
-client := chanollama.NewWithConfig(config)
+client, err := chanollama.NewOfflineClient(&config)
+if err != nil {
+    log.Fatal(err)
+}
+defer client.Close()
 ```
 
 ## 📋 Requirements
 
-- **Go 1.21+**
+- **Go 1.24+**
 - **GGUF/GGML model file** (e.g., downloaded from Hugging Face)
 - **Sufficient RAM** for model inference (varies by model size)
-
-> **Future**: No external dependencies - models will be loadable directly from GGUF files
+- **No external dependencies** - models load directly from GGUF files
 
 ## 🎯 Use Cases
 
 ### 🤖 Chatbots
 ```go
+// Create offline client
+client, err := chanollama.NewOfflineClient(&chanollama.Config{
+    ModelPath: "/path/to/model.gguf",
+    OfflineMode: true,
+})
+if err != nil {
+    log.Fatal(err)
+}
+defer client.Close()
+
 conversation := chanollama.NewConversation()
 conversation.AddSystemMessage("You are a friendly customer service bot.")
 
@@ -203,6 +255,15 @@ for userInput := range userInputChannel {
 
 ### 🔍 AI-Powered Search
 ```go
+client, err := chanollama.NewOfflineClient(&chanollama.Config{
+    ModelPath: "/path/to/model.gguf",
+    OfflineMode: true,
+})
+if err != nil {
+    log.Fatal(err)
+}
+defer client.Close()
+
 messages := []chanollama.Message{
     {Role: "system", Content: "You are a search assistant. Provide concise, relevant answers."},
     {Role: "user", Content: searchQuery},
@@ -216,6 +277,15 @@ client.ChatStream(messages, func(token string) {
 
 ### 💻 Code Assistant
 ```go
+client, err := chanollama.NewOfflineClient(&chanollama.Config{
+    ModelPath: "/path/to/model.gguf",
+    OfflineMode: true,
+})
+if err != nil {
+    log.Fatal(err)
+}
+defer client.Close()
+
 codeAssistant := []chanollama.Message{
     {Role: "system", Content: "You are an expert programmer. Provide clean, well-documented code."},
     {Role: "user", Content: "Write a REST API handler in Go"},
@@ -307,15 +377,19 @@ type StreamCallback func(token string)
 ### Client Methods
 
 ```go
-// Basic client
-client := chanollama.New("model-name")
+// Offline client
+config := &chanollama.Config{
+    ModelPath: "/path/to/model.gguf",
+    OfflineMode: true,
+}
+client, err := chanollama.NewOfflineClient(config)
 response, err := client.Chat(messages)
 response := client.ChatStream(messages, callback)
 healthy := client.IsHealthy()
 client.Close()
 
-// Streaming engine
-engine := chanollama.NewStreamingEngine("model-name")
+// Offline streaming engine
+engine, err := chanollama.NewOfflineEngine("/path/to/model.gguf")
 tokenCh, errorCh := engine.ChatStreamChan(messages)
 tokenCh, errorCh := engine.ChatStreamChanWithTimeout(messages, timeout)
 ```
@@ -345,7 +419,7 @@ response, err := collector.Collect(tokenCh, errorCh)
 
 ### Concurrent Control
 ```go
-streamer := chanollama.NewConcurrentStreamer("llama2:7b", maxConnections)
+streamer, err := chanollama.NewOfflineConcurrentStreamer("/path/to/model.gguf", maxConnections)
 ```
 
 ## 🤝 Contributing
@@ -362,7 +436,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- [Ollama](https://ollama.ai/) for the excellent local LLM platform
+- [llama.cpp](https://github.com/ggerganov/llama.cpp) for the excellent offline inference engine
 - The Go community for inspiration on clean API design
 
 ---

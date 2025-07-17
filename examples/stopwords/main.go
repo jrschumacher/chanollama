@@ -1,5 +1,12 @@
 package main
 
+// TEST_METADATA:
+// name: stopwords_extraction
+// description: Keyword extraction with stopwords filtering
+// goal: Verify stopwords functionality works without requiring model
+// expected_output: Various keyword extraction results with different configurations
+// timeout: 10s
+
 import (
 	"fmt"
 	"github.com/jrschumacher/chanollama"

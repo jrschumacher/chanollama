@@ -1,10 +1,18 @@
 package main
 
+// TEST_METADATA:
+// name: evaluation_framework
+// description: Evaluation framework demonstration with mock engine
+// goal: Verify evaluation framework functionality without requiring real model
+// expected_output: Evaluation examples with scores and metrics
+// timeout: 30s
+
 import (
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/jrschumacher/chanollama"
 )
@@ -56,13 +64,13 @@ func demonstrateSingleQueryEvaluation() error {
 	// Create a simple mock engine for demonstration
 	engine := &MockEngine{}
 	
-	// Create evaluator
+	// Create evaluator with offline configuration
 	evaluator := chanollama.NewEvaluator(engine, false).
 		WithSystemInfo(chanollama.SystemInfo{
 			Version:   "example-v1.0",
-			Model:     "mock-model",
+			Model:     "offline-model",
 			AgentMode: false,
-			EvalMode:  "demonstration",
+			EvalMode:  "offline-demonstration",
 		})
 	defer evaluator.Close()
 	
@@ -261,7 +269,7 @@ func (m *MockEngine) Chat(messages []chanollama.Message) (*chanollama.Response, 
 		Metadata:     make(map[string]string),
 		Error:        nil,
 		Tokens:       len(response) / 4, // Rough token estimate
-		Model:        "mock-model",
+		Model:        "offline-mock-model",
 		FinishReason: "stop",
 	}, nil
 }
@@ -288,7 +296,6 @@ func (m *MockEngine) Close() error {
 
 // generateMockResponse creates realistic mock responses for demonstration
 func generateMockResponse(query string) string {
-	queryLower := strings.ToLower(query)
 	
 	switch {
 	case containsIgnoreCase(query, "encrypt") && containsIgnoreCase(query, "data"):

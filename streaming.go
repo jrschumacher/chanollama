@@ -21,7 +21,7 @@ func NewStreamingEngine(model string) *StreamingEngine {
 // NewStreamingEngineWithConfig creates a streaming engine with custom config
 func NewStreamingEngineWithConfig(config Config) *StreamingEngine {
 	return &StreamingEngine{
-		client: NewWithConfig(config),
+		client: NewWithConfig(config.ModelPath, config),
 	}
 }
 

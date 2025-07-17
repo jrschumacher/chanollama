@@ -1,8 +1,16 @@
 package main
 
+// TEST_METADATA:
+// name: system_prompts
+// description: System prompt functionality across different roles
+// goal: Verify client can handle system prompts and role-based responses
+// expected_output: Multiple role-based responses (coding, documentation, creative, debugging)
+// timeout: 60s
+
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/jrschumacher/chanollama"
 )
@@ -11,13 +19,15 @@ func main() {
 	fmt.Println("🔧 System Prompts Example")
 	fmt.Println("=========================")
 
-	// Create client
-	client := chanollama.New("llama2:7b")
-	defer client.Close()
-
-	if !client.IsHealthy() {
-		log.Fatal("❌ Ollama service is not available")
+	// Get model path from environment variable
+	modelPath := os.Getenv("CHANOLLAMA_MODEL_PATH")
+	if modelPath == "" {
+		log.Fatal("CHANOLLAMA_MODEL_PATH environment variable is required")
 	}
+
+	// Create client
+	client := chanollama.New(modelPath)
+	defer client.Close()
 
 	// Example 1: Coding Assistant
 	fmt.Println("\n👨‍💻 Coding Assistant:")
@@ -117,10 +127,12 @@ func main() {
 		{Role: "user", Content: "How should I design a microservices architecture for a chat application?"},
 	}
 
-	engine := chanollama.NewStreamingEngine("llama2:7b")
-	engine.ChatStream(archMessages, func(token string) {
+	streamResponse := client.ChatStream(archMessages, func(token string) {
 		fmt.Print(token)
 	})
+	if streamResponse.Error != nil {
+		log.Printf("❌ Streaming error: %v", streamResponse.Error)
+	}
 
 	fmt.Println("\n\n✅ System prompts example completed!")
 }

@@ -268,7 +268,7 @@ func (m *RealisticMockEngine) Chat(messages []Message) (*Response, error) {
 		Metadata:     make(map[string]string),
 		Error:        nil,
 		Tokens:       len(response) / 4, // Rough token estimate
-		Model:        "realistic-mock-engine",
+		Model:        "offline-mock-engine",
 		FinishReason: "stop",
 	}, nil
 }

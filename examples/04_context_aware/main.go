@@ -1,8 +1,16 @@
 package main
 
+// TEST_METADATA:
+// name: context_awareness
+// description: Context-aware conversation with message history
+// goal: Verify conversation context is maintained across multiple turns
+// expected_output: Multi-turn conversation with context statistics
+// timeout: 90s
+
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/jrschumacher/chanollama"
 )
@@ -11,27 +19,28 @@ func main() {
 	fmt.Println("🧠 Context-Aware Conversation Example")
 	fmt.Println("=====================================")
 
-	// Create client
-	client := chanollama.New("llama2:7b")
-	defer client.Close()
-
-	if !client.IsHealthy() {
-		log.Fatal("❌ Ollama service is not available")
+	// Get model path from environment variable
+	modelPath := os.Getenv("CHANOLLAMA_MODEL_PATH")
+	if modelPath == "" {
+		log.Fatal("CHANOLLAMA_MODEL_PATH environment variable is required")
 	}
+
+	// Create client
+	client := chanollama.New(modelPath)
+	defer client.Close()
 
 	// Create a conversation with history management
 	conversation := chanollama.NewConversation()
 	
 	// Set system prompt for the conversation
-	conversation.AddSystemMessage(`You are a helpful programming tutor. 
-	Remember what we've discussed and build upon previous topics in our conversation.`)
+	conversation.AddSystemMessage(`You are a helpful programming tutor. Give brief, clear answers.`)
 
 	fmt.Println("🎓 Programming Tutor Session")
 	fmt.Println("Let's have a conversation that builds upon itself...\n")
 
 	// Turn 1: Ask about variables
-	fmt.Println("👤 Student: What are variables in programming?")
-	conversation.AddUserMessage("What are variables in programming?")
+	fmt.Println("👤 Student: What are variables?")
+	conversation.AddUserMessage("What are variables?")
 
 	response, err := client.Chat(conversation.Messages)
 	if err != nil {
@@ -43,8 +52,8 @@ func main() {
 	conversation.AddAssistantMessage(response.Content)
 
 	// Turn 2: Follow up about types (context-aware)
-	fmt.Println("👤 Student: What about different types of variables?")
-	conversation.AddUserMessage("What about different types of variables?")
+	fmt.Println("👤 Student: What about types?")
+	conversation.AddUserMessage("What about types?")
 
 	response, err = client.Chat(conversation.Messages)
 	if err != nil {
@@ -56,8 +65,8 @@ func main() {
 	conversation.AddAssistantMessage(response.Content)
 
 	// Turn 3: Ask for a code example (should remember context)
-	fmt.Println("👤 Student: Can you show me an example in Go?")
-	conversation.AddUserMessage("Can you show me an example in Go?")
+	fmt.Println("👤 Student: Show me Go example?")
+	conversation.AddUserMessage("Show me Go example?")
 
 	response, err = client.Chat(conversation.Messages)
 	if err != nil {
@@ -69,8 +78,8 @@ func main() {
 	conversation.AddAssistantMessage(response.Content)
 
 	// Turn 4: Reference previous example (context continuity)
-	fmt.Println("👤 Student: How would I modify that example to use pointers?")
-	conversation.AddUserMessage("How would I modify that example to use pointers?")
+	fmt.Println("👤 Student: How to use pointers?")
+	conversation.AddUserMessage("How to use pointers?")
 
 	response, err = client.Chat(conversation.Messages)
 	if err != nil {
@@ -92,10 +101,9 @@ func main() {
 	fmt.Println("\n🔄 Streaming with context:")
 	fmt.Print("🎓 Tutor: ")
 
-	conversation.AddUserMessage("Can you explain the difference between the examples you just showed me?")
+	conversation.AddUserMessage("Explain the difference?")
 
-	engine := chanollama.NewStreamingEngine("llama2:7b")
-	response = engine.ChatStream(conversation.Messages, func(token string) {
+	response = client.ChatStream(conversation.Messages, func(token string) {
 		fmt.Print(token)
 	})
 

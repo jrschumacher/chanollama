@@ -25,8 +25,8 @@ func NewEngine(config Config) (Engine, error) {
 		return NewOfflineEngine(config)
 	}
 	
-	// Default to HTTP client
-	return NewWithConfig(config), nil
+	// Default to offline client with model path
+	return NewWithConfig(config.ModelPath, config), nil
 }
 
 // NewOfflineEngine creates an offline engine with the given configuration
@@ -42,30 +42,11 @@ func NewOfflineEngine(config Config) (Engine, error) {
 	}
 	
 	// Create offline client
-	client := NewOfflineClientWithConfig(modelPath, config)
+	client := NewWithConfig(modelPath, config)
 	
 	return client, nil
 }
 
-// NewEngineWithModel creates an engine with auto-detection based on model parameter
-func NewEngineWithModel(model string) (Engine, error) {
-	// Auto-detect configuration based on model parameter
-	var config Config
-	
-	// If model looks like a file path, use offline mode
-	if strings.Contains(model, "/") || strings.HasSuffix(model, ".gguf") {
-		if _, err := os.Stat(model); err == nil {
-			config = DefaultOfflineConfig(model)
-		} else {
-			return nil, fmt.Errorf("model file not found: %s", model)
-		}
-	} else {
-		// Use HTTP mode for model names
-		config = DefaultConfig(model)
-	}
-	
-	return NewEngine(config)
-}
 
 // validateModelPath checks if the model path is valid
 func validateModelPath(modelPath string) error {
@@ -133,18 +114,3 @@ func AutoDetectMode(model string) (bool, string) {
 	return false, ""
 }
 
-// CreateEngineFromPath creates an engine from a model path with sensible defaults
-func CreateEngineFromPath(modelPath string) (Engine, error) {
-	if err := validateModelPath(modelPath); err != nil {
-		return nil, err
-	}
-	
-	config := DefaultOfflineConfig(modelPath)
-	return NewOfflineEngine(config)
-}
-
-// CreateEngineFromName creates an engine from a model name (HTTP mode)
-func CreateEngineFromName(modelName string) (Engine, error) {
-	config := DefaultConfig(modelName)
-	return NewWithConfig(config), nil
-}
