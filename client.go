@@ -17,6 +17,7 @@ type Client struct {
 	modelPath    string
 	model        *llama.Model
 	context      *llama.Context
+	sanitizer    *TokenSanitizer
 	mu           sync.RWMutex
 	initialized  bool
 	ctx          context.Context
@@ -35,6 +36,7 @@ func NewWithConfig(modelPath string, config Config) *Client {
 	return &Client{
 		config:      config,
 		modelPath:   modelPath,
+		sanitizer:   NewTokenSanitizer(),
 		ctx:         ctx,
 		cancel:      cancel,
 		initialized: false,
@@ -307,7 +309,7 @@ func (c *Client) performInference(prompt string) (string, error) {
 		response.WriteString(piece)
 		
 		// Check for stop sequences to prevent self-conversation
-		if c.shouldStop(response.String()) {
+		if c.sanitizer.ShouldStop(response.String()) {
 			break
 		}
 		
@@ -326,7 +328,7 @@ func (c *Client) performInference(prompt string) (string, error) {
 		}
 	}
 	
-	return c.cleanResponse(response.String()), nil
+	return c.sanitizer.CleanResponse(response.String()), nil
 }
 
 // performStreamingInference runs inference with streaming callback
@@ -396,13 +398,13 @@ func (c *Client) performStreamingInference(prompt string, callback StreamCallbac
 		response.WriteString(piece)
 		
 		// Check for stop sequences to prevent self-conversation
-		if c.shouldStop(response.String()) {
+		if c.sanitizer.ShouldStop(response.String()) {
 			break
 		}
 		
 		// Clean and call streaming callback
 		if callback != nil {
-			cleanedPiece := c.cleanStreamingToken(piece)
+			cleanedPiece := c.sanitizer.CleanStreamingToken(piece)
 			if cleanedPiece != "" {
 				callback(cleanedPiece)
 			}
@@ -423,127 +425,7 @@ func (c *Client) performStreamingInference(prompt string, callback StreamCallbac
 		}
 	}
 	
-	return c.cleanResponse(response.String()), nil
-}
-
-// cleanResponse removes ChatML tokens and cleans up the response
-func (c *Client) cleanResponse(response string) string {
-	// Remove ChatML tokens that might appear in the response
-	cleaned := response
-	
-	// Remove any ChatML tokens that the model might have generated
-	chatMLTokens := []string{
-		"<|im_start|>",
-		"<|im_end|>",
-		"<|eot_id|>",
-		"<|begin_of_text|>",
-		"<|end_of_text|>",
-		"<|eom_id|>",
-	}
-	
-	for _, token := range chatMLTokens {
-		cleaned = strings.ReplaceAll(cleaned, token, "")
-	}
-	
-	// Remove role indicators that might leak through
-	roleIndicators := []string{
-		"user\n",
-		"assistant\n",
-		"system\n",
-		"User:\n",
-		"Assistant:\n",
-		"System:\n",
-		"User: ",
-		"Assistant: ",
-		"System: ",
-	}
-	
-	for _, indicator := range roleIndicators {
-		// Only remove if it appears at the beginning or after a newline
-		if strings.HasPrefix(cleaned, indicator) {
-			cleaned = strings.TrimPrefix(cleaned, indicator)
-		}
-		cleaned = strings.ReplaceAll(cleaned, "\n"+indicator, "\n")
-	}
-	
-	// Clean up extra whitespace and newlines
-	cleaned = strings.TrimSpace(cleaned)
-	
-	// Remove trailing conversation artifacts
-	cleanedLines := []string{}
-	lines := strings.Split(cleaned, "\n")
-	
-	for i, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		
-		// Skip empty lines and lines that look like conversation artifacts
-		if trimmed == "" || strings.HasPrefix(trimmed, "<|") || strings.HasSuffix(trimmed, "|>") {
-			continue
-		}
-		
-		// Skip standalone role indicators that appear at the end
-		if i == len(lines)-1 && (trimmed == "User" || trimmed == "Assistant" || 
-		                         trimmed == "Human" || trimmed == "AI" ||
-		                         trimmed == "User:" || trimmed == "Assistant:" ||
-		                         trimmed == "Human:" || trimmed == "AI:") {
-			continue
-		}
-		
-		cleanedLines = append(cleanedLines, line)
-	}
-	
-	result := strings.Join(cleanedLines, "\n")
-	
-	// Remove trailing conversation artifacts that might be at the very end
-	result = strings.TrimSuffix(result, "\nUser")
-	result = strings.TrimSuffix(result, "\nAssistant")
-	result = strings.TrimSuffix(result, "\nHuman")
-	result = strings.TrimSuffix(result, "\nAI")
-	result = strings.TrimSuffix(result, "\n\nUser")
-	result = strings.TrimSuffix(result, "\n\nAssistant")
-	result = strings.TrimSuffix(result, "\n\nHuman")
-	result = strings.TrimSuffix(result, "\n\nAI")
-	
-	return strings.TrimSpace(result)
-}
-
-// cleanStreamingToken cleans individual tokens during streaming to prevent ChatML artifacts
-func (c *Client) cleanStreamingToken(token string) string {
-	// Filter out ChatML tokens as they're generated
-	chatMLTokens := []string{
-		"<|im_start|>",
-		"<|im_end|>",
-		"<|eot_id|>",
-		"<|begin_of_text|>",
-		"<|end_of_text|>",
-		"<|eom_id|>",
-	}
-	
-	for _, chatToken := range chatMLTokens {
-		if strings.Contains(token, chatToken) {
-			return ""
-		}
-	}
-	
-	// Filter out role indicators that might appear at the start of tokens
-	roleIndicators := []string{
-		"user\n", "assistant\n", "system\n",
-		"User:\n", "Assistant:\n", "System:\n",
-		"User: ", "Assistant: ", "System: ",
-	}
-	
-	for _, indicator := range roleIndicators {
-		if strings.HasPrefix(token, indicator) {
-			return ""
-		}
-	}
-	
-	// Also filter out partial ChatML tokens that might appear across multiple pieces
-	if strings.Contains(token, "<|") || strings.Contains(token, "|>") {
-		return ""
-	}
-	
-	return token
+	return c.sanitizer.CleanResponse(response.String()), nil
 }
 
 // createSamplingContext creates a sampling context with optional log suppression
@@ -563,59 +445,6 @@ func (c *Client) createSamplingContext(samplingParams llama.SamplingParams) (*ll
 	} else {
 		return llama.NewSamplingContext(c.model, samplingParams)
 	}
-}
-
-// shouldStop checks if the response contains patterns that indicate self-conversation
-func (c *Client) shouldStop(response string) bool {
-	// More specific stop patterns that clearly indicate model is starting a new conversation turn
-	stopPatterns := []string{
-		"<|eot_id|>",
-		"<|end_of_text|>",
-		"<|im_start|>",
-		"<|im_end|>",
-	}
-	
-	for _, pattern := range stopPatterns {
-		if strings.Contains(response, pattern) {
-			return true
-		}
-	}
-	
-	// Check for conversation patterns, but be more careful about context
-	lines := strings.Split(response, "\n")
-	for i, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		
-		// Only stop if we see a clear conversation pattern after some content
-		if i > 0 && (strings.HasPrefix(trimmed, "User:") || 
-		             strings.HasPrefix(trimmed, "Assistant:") ||
-		             strings.HasPrefix(trimmed, "Human:") ||
-		             strings.HasPrefix(trimmed, "AI:")) {
-			// Check if there's actual content before this line
-			hasContent := false
-			for j := 0; j < i; j++ {
-				if strings.TrimSpace(lines[j]) != "" {
-					hasContent = true
-					break
-				}
-			}
-			if hasContent {
-				return true
-			}
-		}
-	}
-	
-	// Stop if we see standalone "User" or "Assistant" on its own line after content
-	if strings.Contains(response, "\n\nUser\n") || 
-	   strings.Contains(response, "\n\nAssistant\n") ||
-	   strings.HasSuffix(response, "\n\nUser") ||
-	   strings.HasSuffix(response, "\n\nAssistant") ||
-	   strings.HasSuffix(response, "\nUser") ||
-	   strings.HasSuffix(response, "\nAssistant") {
-		return true
-	}
-	
-	return false
 }
 
 // buildPrompt converts chat messages to a prompt string using a simple format
