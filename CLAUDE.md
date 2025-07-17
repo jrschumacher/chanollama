@@ -19,7 +19,7 @@ chanollama is a Go library for **truly offline LLM (Large Language Model) infere
 - `go test ./...` - Run all tests
 - `go run examples/basic/main.go` - Simple chat example
 - `go run examples/streaming/main.go` - Real-time streaming demo
-- `go run examples/06_concurrent_streaming/main.go` - Concurrent operations
+- `go run examples/concurrent/main.go` - Concurrent operations
 
 ### Documentation
 - `go doc github.com/jrschumacher/chanollama` - API reference

@@ -55,9 +55,9 @@ The test system evaluates **functional goals** rather than response quality:
 
 1. **Model-Required Tests** - Need `CHANOLLAMA_MODEL_PATH` set
    - `basic_chat` - Basic chat functionality
-   - `streaming_chat` - Streaming responses
-   - `engine_streaming` - Engine-based streaming
-   - `system_prompts` - System prompt handling
+   - `streaming_chat` - Real-time streaming responses
+   - `engine_streaming` - Engine-based streaming with health checks
+   - `system_prompts` - System prompt handling and specialized assistants
    - `context_awareness` - Context-aware conversations
    - `concurrent_streaming` - Concurrent request handling
    - `advanced_config` - Advanced configuration
@@ -72,11 +72,10 @@ The test system evaluates **functional goals** rather than response quality:
 | Example | Description | Features Demonstrated |
 |---------|-------------|----------------------|
 | `basic/` | Simple chat request | Basic client usage |
-| `streaming/` | Streaming responses | Callback-based streaming |
-| `02_streaming/` | Engine streaming | Engine interface, health checks |
-| `03_system_prompts/` | System prompts | Role-based interactions |
-| `04_context_aware/` | Context awareness | Conversation management |
-| `06_concurrent_streaming/` | Concurrent requests | Concurrent streaming |
+| `streaming/` | Real-time streaming | Engine interface, health checks, callback-based streaming |
+| `system_prompts/` | System prompts | Role-based interactions, specialized assistants |
+| `context_aware/` | Context awareness | Conversation management, context preservation |
+| `concurrent/` | Concurrent requests | Sequential streaming, performance testing |
 | `advanced/` | Advanced config | Custom engine configuration |
 | `conversation/` | Conversation history | Multi-turn conversations |
 | `evaluation/` | Evaluation framework | Testing and evaluation |
