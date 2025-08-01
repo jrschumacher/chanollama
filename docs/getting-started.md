@@ -1,6 +1,6 @@
 # 🚀 Getting Started with chanollama
 
-A quick guide to get you up and running with chanollama for streaming LLM interactions.
+A quick guide to get you up and running with chanollama for **truly offline** LLM inference.
 
 ## 📦 Installation
 
@@ -10,33 +10,31 @@ go get github.com/jrschumacher/chanollama
 
 ## 🔧 Prerequisites
 
-1. **Ollama installed and running**:
-   ```bash
-   # Install Ollama (macOS)
-   brew install ollama
-   
-   # Start Ollama service
-   ollama serve
-   ```
+### System Requirements
 
-2. **Download a model**:
-   ```bash
-   # Download llama2 7B model
-   ollama pull llama2:7b
-   
-   # Or other models
-   ollama pull codellama:7b
-   ollama pull mistral:7b
-   ```
+- **Go 1.24+** - Uses modern Go concurrency features
+- **Sufficient RAM** - Model size + 2-4GB overhead
+- **GGUF/GGML Model File** - No Ollama server required!
 
-3. **Verify Ollama is running**:
-   ```bash
-   curl http://localhost:11434/api/version
-   ```
+### Download a Model
+
+Download GGUF models directly from sources like:
+
+```bash
+# Example: Download Llama 2 7B model (~4GB)
+wget https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/resolve/main/llama-2-7b-chat.Q4_K_M.gguf
+
+# Or download from other sources:
+# - https://huggingface.co/models?filter=gguf  
+# - https://huggingface.co/TheBloke (popular quantized models)
+# - https://huggingface.co/microsoft (official Microsoft models)
+```
+
+**No Ollama Server Required** - chanollama loads models directly from GGUF files!
 
 ## 🎯 Quick Start
 
-### Basic Chat
+### Basic Offline Chat
 
 ```go
 package main
@@ -48,13 +46,13 @@ import (
 )
 
 func main() {
-    // Create client
-    client := chanollama.New("llama2:7b")
+    // Create offline client - no server needed!
+    client := chanollama.New("/path/to/llama-2-7b-chat.Q4_K_M.gguf")
     defer client.Close()
     
     // Simple chat
     messages := []chanollama.Message{
-        {Role: "user", Content: "Hello! What can you help me with?"},
+        chanollama.NewUserMessage("Hello! What can you help me with?"),
     }
     
     response, err := client.Chat(messages)
@@ -66,20 +64,20 @@ func main() {
 }
 ```
 
-### Streaming Chat
+### Real-time Streaming
 
 ```go
 func main() {
-    client := chanollama.New("llama2:7b")
+    client := chanollama.New("/path/to/llama-2-7b-chat.Q4_K_M.gguf")
     defer client.Close()
     
     messages := []chanollama.Message{
-        {Role: "user", Content: "Tell me a short story about Go programming"},
+        chanollama.NewUserMessage("Tell me a short story about Go programming"),
     }
     
     fmt.Print("Assistant: ")
     response := client.ChatStream(messages, func(token string) {
-        fmt.Print(token) // Print each token as it arrives
+        fmt.Print(token) // Each token appears in real-time!
     })
     
     if response.Error != nil {

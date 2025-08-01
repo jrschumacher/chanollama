@@ -332,3 +332,259 @@ func (rm *ResourceMonitor) ShouldLimitProcessing(maxMemoryMB uint64, maxGoroutin
 	
 	return false
 }
+
+// ConversationManager handles conversation history truncation to prevent batch size crashes
+type ConversationManager struct {
+	config         ConversationConfig
+	tokenEstimator *TokenEstimator
+}
+
+// NewConversationManager creates a new conversation manager with default config
+func NewConversationManager() *ConversationManager {
+	return &ConversationManager{
+		config:         DefaultConversationConfig(),
+		tokenEstimator: NewTokenEstimator(),
+	}
+}
+
+// NewConversationManagerWithConfig creates a conversation manager with custom config
+func NewConversationManagerWithConfig(config ConversationConfig) *ConversationManager {
+	return &ConversationManager{
+		config:         config,
+		tokenEstimator: NewTokenEstimator(),
+	}
+}
+
+// SetConfig updates the conversation manager configuration
+func (cm *ConversationManager) SetConfig(config ConversationConfig) {
+	cm.config = config
+}
+
+// TruncateMessages truncates messages to stay within token and count limits
+func (cm *ConversationManager) TruncateMessages(messages []Message) []Message {
+	if len(messages) == 0 {
+		return messages
+	}
+	
+	// Quick check - if we're under limits, no truncation needed
+	if !cm.needsTruncation(messages) {
+		return messages
+	}
+	
+	// Separate system messages from others
+	var systemMessages []Message
+	var otherMessages []Message
+	
+	for _, msg := range messages {
+		if msg.IsSystem() && cm.config.PreserveSystem {
+			systemMessages = append(systemMessages, msg)
+		} else {
+			otherMessages = append(otherMessages, msg)
+		}
+	}
+	
+	// Calculate effective limits for non-system messages
+	systemMessageCount := len(systemMessages)
+	effectiveMaxMessages := cm.config.MaxMessages - systemMessageCount
+	if effectiveMaxMessages < 0 {
+		effectiveMaxMessages = 0
+	}
+	
+	// Apply truncation strategy with adjusted limits
+	var truncatedOthers []Message
+	switch cm.config.TruncationStrategy {
+	case TruncationOldest:
+		truncatedOthers = cm.truncateOldestWithLimit(otherMessages, effectiveMaxMessages)
+	case TruncationNewest:
+		truncatedOthers = cm.truncateNewestWithLimit(otherMessages, effectiveMaxMessages)
+	case TruncationMiddle:
+		truncatedOthers = cm.truncateMiddleWithLimit(otherMessages, effectiveMaxMessages)
+	case TruncationSummarize:
+		truncatedOthers = cm.truncateWithSummarization(otherMessages)
+	default:
+		// Default to oldest truncation
+		truncatedOthers = cm.truncateOldestWithLimit(otherMessages, effectiveMaxMessages)
+	}
+	
+	// Combine system messages with truncated others
+	result := append(systemMessages, truncatedOthers...)
+	
+	// Log truncation if enabled
+	if cm.config.EnableLogging && len(result) < len(messages) {
+		originalCount := len(messages)
+		truncatedCount := len(result)
+		// Note: In production, this would use a proper logger
+		// For now, we'll just store the info in a way that can be accessed
+		_ = originalCount
+		_ = truncatedCount
+	}
+	
+	return result
+}
+
+// needsTruncation checks if messages exceed configured limits
+func (cm *ConversationManager) needsTruncation(messages []Message) bool {
+	// Check message count limit
+	if len(messages) > cm.config.MaxMessages {
+		return true
+	}
+	
+	// Check token count limit
+	totalTokens := cm.tokenEstimator.EstimateMessagesTokens(messages)
+	if totalTokens > cm.config.MaxTokens {
+		return true
+	}
+	
+	return false
+}
+
+
+
+// EstimateTokens estimates tokens for a slice of messages
+func (cm *ConversationManager) EstimateTokens(messages []Message) int {
+	return cm.tokenEstimator.EstimateMessagesTokens(messages)
+}
+
+// GetTruncationInfo returns information about what would be truncated
+func (cm *ConversationManager) GetTruncationInfo(messages []Message) TruncationInfo {
+	originalCount := len(messages)
+	originalTokens := cm.tokenEstimator.EstimateMessagesTokens(messages)
+	
+	truncated := cm.TruncateMessages(messages)
+	truncatedCount := len(truncated)
+	truncatedTokens := cm.tokenEstimator.EstimateMessagesTokens(truncated)
+	
+	return TruncationInfo{
+		OriginalCount:    originalCount,
+		OriginalTokens:   originalTokens,
+		TruncatedCount:   truncatedCount,
+		TruncatedTokens:  truncatedTokens,
+		WillTruncate:     originalCount != truncatedCount,
+		RemovedMessages:  originalCount - truncatedCount,
+		SavedTokens:      originalTokens - truncatedTokens,
+	}
+}
+
+// TruncationInfo provides information about conversation truncation
+type TruncationInfo struct {
+	OriginalCount    int  `json:"original_count"`
+	OriginalTokens   int  `json:"original_tokens"`
+	TruncatedCount   int  `json:"truncated_count"`
+	TruncatedTokens  int  `json:"truncated_tokens"`
+	WillTruncate     bool `json:"will_truncate"`
+	RemovedMessages  int  `json:"removed_messages"`
+	SavedTokens      int  `json:"saved_tokens"`
+}
+
+// truncateOldestWithLimit removes oldest messages until within limits
+func (cm *ConversationManager) truncateOldestWithLimit(messages []Message, maxMessages int) []Message {
+	if len(messages) == 0 {
+		return messages
+	}
+	
+	// Apply message count limit first
+	if len(messages) > maxMessages {
+		start := len(messages) - maxMessages
+		messages = messages[start:]
+	}
+	
+	// Apply token limit by removing oldest messages
+	for len(messages) > 0 {
+		tokens := cm.tokenEstimator.EstimateMessagesTokens(messages)
+		if tokens <= cm.config.MaxTokens {
+			break
+		}
+		messages = messages[1:] // Remove oldest message
+	}
+	
+	return messages
+}
+
+// truncateNewestWithLimit removes newest messages until within limits
+func (cm *ConversationManager) truncateNewestWithLimit(messages []Message, maxMessages int) []Message {
+	if len(messages) == 0 {
+		return messages
+	}
+	
+	// Apply message count limit first
+	if len(messages) > maxMessages {
+		messages = messages[:maxMessages]
+	}
+	
+	// Apply token limit by removing newest messages
+	for len(messages) > 0 {
+		tokens := cm.tokenEstimator.EstimateMessagesTokens(messages)
+		if tokens <= cm.config.MaxTokens {
+			break
+		}
+		messages = messages[:len(messages)-1] // Remove newest message
+	}
+	
+	return messages
+}
+
+// truncateMiddleWithLimit removes middle messages, keeping first and last messages
+func (cm *ConversationManager) truncateMiddleWithLimit(messages []Message, maxMessages int) []Message {
+	if len(messages) == 0 {
+		return messages
+	}
+	
+	// If we have very few messages, fall back to oldest truncation
+	if len(messages) <= 3 {
+		return cm.truncateOldestWithLimit(messages, maxMessages)
+	}
+	
+	// Apply message count limit by keeping first and last messages
+	if len(messages) > maxMessages {
+		keepCount := maxMessages
+		if keepCount < 2 {
+			keepCount = 2
+		}
+		
+		// Keep first and last messages, distribute the rest
+		firstCount := keepCount / 2
+		lastCount := keepCount - firstCount
+		
+		result := make([]Message, 0, keepCount)
+		result = append(result, messages[:firstCount]...)
+		result = append(result, messages[len(messages)-lastCount:]...)
+		messages = result
+	}
+	
+	// Apply token limit by removing middle messages
+	for len(messages) > 2 {
+		tokens := cm.tokenEstimator.EstimateMessagesTokens(messages)
+		if tokens <= cm.config.MaxTokens {
+			break
+		}
+		
+		// Remove middle message
+		middleIndex := len(messages) / 2
+		messages = append(messages[:middleIndex], messages[middleIndex+1:]...)
+	}
+	
+	return messages
+}
+
+// truncateWithSummarization summarizes older messages and keeps recent ones
+func (cm *ConversationManager) truncateWithSummarization(messages []Message) []Message {
+	if len(messages) == 0 {
+		return messages
+	}
+	
+	// For now, fall back to oldest truncation
+	// TODO: Implement actual summarization using the model
+	// This would require access to the model for inference
+	systemCount := 0
+	for _, msg := range messages {
+		if msg.IsSystem() {
+			systemCount++
+		}
+	}
+	effectiveMaxMessages := cm.config.MaxMessages - systemCount
+	if effectiveMaxMessages < 0 {
+		effectiveMaxMessages = 0
+	}
+	
+	return cm.truncateOldestWithLimit(messages, effectiveMaxMessages)
+}

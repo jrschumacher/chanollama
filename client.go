@@ -3,6 +3,7 @@ package chanollama
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"sync"
@@ -13,15 +14,16 @@ import (
 
 // Client implements the Engine interface for direct model execution
 type Client struct {
-	config       Config
-	modelPath    string
-	model        *llama.Model
-	context      *llama.Context
-	sanitizer    *TokenSanitizer
-	mu           sync.RWMutex
-	initialized  bool
-	ctx          context.Context
-	cancel       context.CancelFunc
+	config              Config
+	modelPath           string
+	model               *llama.Model
+	context             *llama.Context
+	sanitizer           *TokenSanitizer
+	conversationManager *ConversationManager
+	mu                  sync.RWMutex
+	initialized         bool
+	ctx                 context.Context
+	cancel              context.CancelFunc
 }
 
 // New creates a new client with the specified model path
@@ -33,13 +35,24 @@ func New(modelPath string) *Client {
 func NewWithConfig(modelPath string, config Config) *Client {
 	ctx, cancel := context.WithCancel(context.Background())
 	
+	// Create conversation manager with appropriate batch size
+	conversationConfig := DefaultConversationConfig()
+	if config.ContextSize > 0 {
+		// Set token limit to 80% of context size to prevent batch size issues
+		conversationConfig.MaxTokens = int(float64(config.ContextSize) * 0.8)
+		conversationConfig.BatchSize = config.ContextSize
+		// Disable auto-detection since we're setting explicit values
+		conversationConfig.AutoDetectLimits = false
+	}
+	
 	return &Client{
-		config:      config,
-		modelPath:   modelPath,
-		sanitizer:   NewTokenSanitizer(),
-		ctx:         ctx,
-		cancel:      cancel,
-		initialized: false,
+		config:              config,
+		modelPath:           modelPath,
+		sanitizer:           NewTokenSanitizer(),
+		conversationManager: NewConversationManagerWithConfig(conversationConfig),
+		ctx:                 ctx,
+		cancel:              cancel,
+		initialized:         false,
 	}
 }
 
@@ -143,48 +156,44 @@ func (c *Client) Initialize() error {
 	c.initialized = true
 	// Model loaded successfully - suppress verbose logs for cleaner chat experience
 	
+	// Auto-detect conversation limits if enabled
+	if c.conversationManager.config.AutoDetectLimits {
+		if err := c.AutoDetectConversationLimits(); err != nil {
+			if c.config.Verbose {
+				log.Printf("Failed to auto-detect conversation limits: %v", err)
+			}
+		}
+	}
+	
 	return nil
 }
 
 // Chat performs a non-streaming chat request
 func (c *Client) Chat(messages []Message) (*Response, error) {
-	if !c.initialized {
-		if err := c.Initialize(); err != nil {
-			return &Response{Error: err}, err
-		}
-	}
-	
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	
-	start := time.Now()
-	
-	// Build prompt from messages
-	prompt := c.buildPrompt(messages)
-	
-	// Perform inference
-	content, err := c.performInference(prompt)
-	if err != nil {
-		return &Response{Error: err}, err
-	}
-	
-	duration := time.Since(start)
-	
-	return &Response{
-		Content:      content,
-		Tokens:       c.estimateTokens(content),
-		Duration:     duration,
-		Model:        c.config.Model,
-		Timestamp:    time.Now(),
-		FinishReason: "stop",
-	}, nil
+	return c.safeInference(messages, nil)
 }
 
 // ChatStream performs a streaming chat request
 func (c *Client) ChatStream(messages []Message, callback StreamCallback) *Response {
+	response, _ := c.safeInference(messages, callback)
+	return response
+}
+
+// safeInference wraps inference calls with panic recovery and error handling
+func (c *Client) safeInference(messages []Message, callback StreamCallback) (*Response, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			// Log the panic and return graceful error
+			if c.config.Verbose {
+				log.Printf("LLM inference panic recovered: %v", r)
+			}
+		}
+	}()
+	
 	if !c.initialized {
 		if err := c.Initialize(); err != nil {
-			return &Response{Error: err}
+			wrappedErr := fmt.Errorf("%w: %v", ErrModelNotLoaded, err)
+			return &Response{Error: wrappedErr}, wrappedErr
 		}
 	}
 	
@@ -193,18 +202,43 @@ func (c *Client) ChatStream(messages []Message, callback StreamCallback) *Respon
 	
 	start := time.Now()
 	
-	// Build prompt from messages
-	prompt := c.buildPrompt(messages)
+	// Truncate messages to prevent batch size crashes
+	truncatedMessages := c.conversationManager.TruncateMessages(messages)
 	
-	// Perform streaming inference
-	content, err := c.performStreamingInference(prompt, callback)
+	// Check if truncation occurred due to batch size limits
+	if len(truncatedMessages) < len(messages) {
+		estimatedTokens := c.conversationManager.EstimateTokens(messages)
+		if estimatedTokens > c.config.ContextSize {
+			if c.config.Verbose {
+				log.Printf("Context overflow detected: %d tokens > %d limit, truncated to %d messages", 
+					estimatedTokens, c.config.ContextSize, len(truncatedMessages))
+			}
+		}
+	}
+	
+	// Build prompt from truncated messages
+	prompt := c.buildPrompt(truncatedMessages)
+	
+	// Perform inference based on whether streaming is requested
+	var content string
+	var err error
+	
+	if callback != nil {
+		// Streaming inference
+		content, err = c.performStreamingInference(prompt, callback)
+	} else {
+		// Non-streaming inference
+		content, err = c.performInference(prompt)
+	}
+	
 	if err != nil {
-		return &Response{Error: err}
+		wrappedErr := fmt.Errorf("%w: %v", ErrInferenceFailed, err)
+		return &Response{Error: wrappedErr}, wrappedErr
 	}
 	
 	duration := time.Since(start)
 	
-	return &Response{
+	response := &Response{
 		Content:      content,
 		Tokens:       c.estimateTokens(content),
 		Duration:     duration,
@@ -212,6 +246,19 @@ func (c *Client) ChatStream(messages []Message, callback StreamCallback) *Respon
 		Timestamp:    time.Now(),
 		FinishReason: "stop",
 	}
+	
+	// Add truncation info to metadata if messages were truncated
+	if len(truncatedMessages) < len(messages) {
+		if response.Metadata == nil {
+			response.Metadata = make(map[string]string)
+		}
+		response.Metadata["truncated_messages"] = fmt.Sprintf("%d", len(messages)-len(truncatedMessages))
+		response.Metadata["original_message_count"] = fmt.Sprintf("%d", len(messages))
+		response.Metadata["truncated_message_count"] = fmt.Sprintf("%d", len(truncatedMessages))
+		response.Metadata["truncation_reason"] = "batch_size_limit"
+	}
+	
+	return response, nil
 }
 
 // IsHealthy checks if the client is ready for inference
@@ -484,6 +531,73 @@ func (c *Client) GetConfig() Config {
 	return c.config
 }
 
+// GetModelInfo returns information about the loaded model
+func (c *Client) GetModelInfo() (*ModelInfo, error) {
+	if !c.initialized {
+		return nil, ErrModelNotLoaded
+	}
+	
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	
+	if c.model == nil {
+		return nil, ErrModelNotLoaded
+	}
+	
+	// Get context size from configuration (as set during initialization)
+	contextSize := c.config.ContextSize
+	if contextSize == 0 {
+		contextSize = 4096 // Default context size
+	}
+	
+	// Estimate batch size based on context size and configuration
+	// Most models use batch size that's a fraction of context size
+	batchSize := contextSize / 8 // Conservative estimate
+	if batchSize < 512 {
+		batchSize = 512 // Minimum reasonable batch size
+	}
+	if batchSize > 2048 {
+		batchSize = 2048 // Maximum typical batch size
+	}
+	
+	return &ModelInfo{
+		VocabSize:   -1, // Not available without proper API
+		ContextSize: contextSize,
+		BatchSize:   batchSize,
+		ModelPath:   c.modelPath,
+	}, nil
+}
+
+// AutoDetectConversationLimits automatically configures conversation limits based on model capabilities
+func (c *Client) AutoDetectConversationLimits() error {
+	modelInfo, err := c.GetModelInfo()
+	if err != nil {
+		return err
+	}
+	
+	config := c.conversationManager.config
+	
+	// Auto-detect batch size if not set
+	if config.BatchSize == 0 || config.AutoDetectLimits {
+		config.BatchSize = modelInfo.BatchSize
+	}
+	
+	// Auto-detect max tokens if not set (80% of batch size)
+	if config.MaxTokens == 0 || config.AutoDetectLimits {
+		config.MaxTokens = int(float64(modelInfo.BatchSize) * 0.8)
+	}
+	
+	// Update the conversation manager
+	c.conversationManager.SetConfig(config)
+	
+	if c.config.Verbose {
+		log.Printf("Auto-detected conversation limits: MaxTokens=%d, BatchSize=%d", 
+			config.MaxTokens, config.BatchSize)
+	}
+	
+	return nil
+}
+
 // UpdateConfig updates the configuration (requires reinitialization)
 func (c *Client) UpdateConfig(config Config) {
 	c.mu.Lock()
@@ -491,6 +605,27 @@ func (c *Client) UpdateConfig(config Config) {
 	
 	c.config = config
 	// Note: Changing config requires reinitialization for some parameters
+}
+
+// GetConversationManager returns the conversation manager for advanced configuration
+func (c *Client) GetConversationManager() *ConversationManager {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	
+	return c.conversationManager
+}
+
+// SetConversationConfig updates the conversation management configuration
+func (c *Client) SetConversationConfig(config ConversationConfig) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	
+	c.conversationManager.SetConfig(config)
+}
+
+// SetConversationLimits is a convenience method to set conversation limits
+func (c *Client) SetConversationLimits(config ConversationConfig) {
+	c.SetConversationConfig(config)
 }
 
 // GenerateEmbedding generates an embedding for the given text using the specified model

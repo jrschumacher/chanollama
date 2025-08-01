@@ -404,6 +404,102 @@ conv.AddSystemMessage("content")
 tokens := conv.EstimateTokens()
 ```
 
+## 🛡️ Error Recovery & Safety
+
+chanollama includes built-in error recovery and panic handling to ensure robust operation:
+
+### Error Types
+
+```go
+import "github.com/jrschumacher/chanollama"
+
+// Predefined error types for better error handling
+var (
+    ErrBatchSizeExceeded = errors.New("conversation too long for model batch size")
+    ErrTokenCountFailed  = errors.New("unable to count tokens, using message limit fallback")
+    ErrModelNotLoaded    = errors.New("model not loaded or initialization failed")
+    ErrInferenceFailed   = errors.New("inference operation failed")
+    ErrContextOverflow   = errors.New("context size exceeded, conversation truncated")
+)
+```
+
+### Automatic Conversation Management
+
+The library automatically prevents batch size crashes by truncating conversations:
+
+```go
+// Client automatically manages conversation length
+client := chanollama.New("/path/to/model.gguf")
+
+// Configure conversation limits
+client.SetConversationConfig(chanollama.ConversationConfig{
+    MaxTokens:      3200,  // 80% of batch size
+    MaxMessages:    50,    // Fallback limit
+    KeepSystemMsg:  true,  // Preserve system messages
+    TruncateOldest: true,  // Remove oldest messages first
+})
+
+// Long conversations are automatically truncated
+messages := []chanollama.Message{
+    // ... many messages that would exceed batch size ...
+}
+
+response, err := client.Chat(messages) // Automatically truncated
+if response.Metadata["truncated_messages"] != "" {
+    log.Printf("Truncated %s messages", response.Metadata["truncated_messages"])
+}
+```
+
+### Panic Recovery
+
+All inference operations are wrapped with panic recovery:
+
+```go
+// The library includes built-in panic recovery
+// Panics are logged and converted to errors
+response, err := client.Chat(messages)
+if err != nil {
+    // Handle graceful error instead of crash
+    if errors.Is(err, chanollama.ErrInferenceFailed) {
+        log.Printf("Inference failed: %v", err)
+    }
+}
+```
+
+### Safety Wrapper for Implementers
+
+For applications using chanollama (like otdfctl), add this safety wrapper:
+
+```go
+// In your application code
+func safeEngineCall(fn func() (*chanollama.Response, error)) (*chanollama.Response, error) {
+    defer func() {
+        if r := recover(); r != nil {
+            log.Printf("Engine call panic: %v", r)
+        }
+    }()
+    return fn()
+}
+
+// Usage in your CLI or application
+response, err := safeEngineCall(func() (*chanollama.Response, error) {
+    return client.Chat(messages)
+})
+```
+
+### Conversation Truncation Info
+
+Get detailed information about conversation truncation:
+
+```go
+manager := client.GetConversationManager()
+info := manager.GetTruncationInfo(messages)
+
+fmt.Printf("Original: %d messages, %d tokens\n", info.OriginalCount, info.OriginalTokens)
+fmt.Printf("Truncated: %d messages, %d tokens\n", info.TruncatedCount, info.TruncatedTokens)
+fmt.Printf("Will truncate: %v\n", info.WillTruncate)
+```
+
 ## 🛠️ Advanced Features
 
 ### Custom Timeout

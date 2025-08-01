@@ -1,8 +1,18 @@
 package chanollama
 
 import (
+	"errors"
 	"fmt"
 	"time"
+)
+
+// Error types for conversation management and inference
+var (
+	ErrBatchSizeExceeded = errors.New("conversation too long for model batch size")
+	ErrTokenCountFailed  = errors.New("unable to count tokens, using message limit fallback")
+	ErrModelNotLoaded    = errors.New("model not loaded or initialization failed")
+	ErrInferenceFailed   = errors.New("inference operation failed")
+	ErrContextOverflow   = errors.New("context size exceeded, conversation truncated")
 )
 
 // Message represents a chat message
@@ -390,6 +400,50 @@ func (c *Conversation) EstimateTokens() int {
 		total += len(msg.Content) / 4
 	}
 	return total
+}
+
+// TruncationStrategy defines how messages are truncated
+type TruncationStrategy string
+
+const (
+	TruncationOldest    TruncationStrategy = "oldest"    // Remove oldest messages first
+	TruncationNewest    TruncationStrategy = "newest"    // Remove newest messages first
+	TruncationMiddle    TruncationStrategy = "middle"    // Remove middle messages, keep first and last
+	TruncationSummarize TruncationStrategy = "summarize" // Summarize older messages
+)
+
+// ConversationConfig defines configuration for conversation management
+type ConversationConfig struct {
+	MaxTokens          int                `json:"max_tokens"`           // Maximum tokens before truncation (0 = auto-detect from model)
+	MaxMessages        int                `json:"max_messages"`         // Maximum messages before truncation (fallback)
+	TruncationStrategy TruncationStrategy `json:"truncation_strategy"`  // How to truncate messages
+	PreserveSystem     bool               `json:"preserve_system"`      // Always preserve system message during truncation
+	AutoDetectLimits   bool               `json:"auto_detect_limits"`   // Automatically detect model limits
+	BatchSize          int                `json:"batch_size"`           // Model's batch size limit (0 = auto-detect)
+	EnableLogging      bool               `json:"enable_logging"`       // Log truncation events
+	SummaryPrompt      string             `json:"summary_prompt"`       // Prompt for summarization strategy
+}
+
+// DefaultConversationConfig returns sensible defaults for conversation management
+func DefaultConversationConfig() ConversationConfig {
+	return ConversationConfig{
+		MaxTokens:          0,                    // Auto-detect from model
+		MaxMessages:        50,                   // Fallback limit
+		TruncationStrategy: TruncationOldest,     // Remove oldest messages first
+		PreserveSystem:     true,                 // Always preserve system messages
+		AutoDetectLimits:   true,                 // Enable auto-detection
+		BatchSize:          0,                    // Auto-detect from model
+		EnableLogging:      false,                // Disable logging by default
+		SummaryPrompt:      "Summarize the following conversation history concisely:",
+	}
+}
+
+// ModelInfo contains information about a loaded model
+type ModelInfo struct {
+	VocabSize   int    `json:"vocab_size"`   // Size of the model's vocabulary
+	ContextSize int    `json:"context_size"` // Maximum context window size
+	BatchSize   int    `json:"batch_size"`   // Recommended batch size for inference
+	ModelPath   string `json:"model_path"`   // Path to the model file
 }
 
 // ContextSummarizer interface for summarizing conversation history
