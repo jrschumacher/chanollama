@@ -1,0 +1,19 @@
+{
+  "release-type": "go",
+  "packages": {
+    ".": {
+      "package-name": "chanollama",
+      "changelog-sections": [
+        {"type": "feat", "section": "Features"},
+        {"type": "fix", "section": "Bug Fixes"},
+        {"type": "perf", "section": "Performance Improvements"},
+        {"type": "refactor", "section": "Code Refactoring"},
+        {"type": "docs", "section": "Documentation"},
+        {"type": "test", "section": "Tests"},
+        {"type": "ci", "section": "Continuous Integration"},
+        {"type": "chore", "section": "Miscellaneous", "hidden": false}
+      ],
+      "release-as": "1.0.0"
+    }
+  }
+}
