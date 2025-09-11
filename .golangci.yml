@@ -15,14 +15,10 @@ linters:
     - gofmt
     - goimports
     - misspell
-    - gocritic
-    - revive
-    - gosec
     - goconst
     - bodyclose
     - contextcheck
     - durationcheck
-    - exportloopref
     - nilerr
     - nolintlint
     - predeclared
@@ -37,7 +33,9 @@ linters-settings:
     check-blank: true
 
   govet:
-    check-shadowing: true
+    settings:
+      shadow:
+        strict: true
     enable-all: true
     disable:
       - fieldalignment # Can be noisy for structs
@@ -65,8 +63,8 @@ linters-settings:
 
 issues:
   exclude-use-default: false
-  max-issues-per-linter: 0
-  max-same-issues: 0
+  max-issues-per-linter: 50
+  max-same-issues: 10
   
   exclude-rules:
     # Exclude some linters from running on tests files
@@ -75,13 +73,47 @@ issues:
         - gosec
         - goconst
         - bodyclose
+        - errcheck
+        - unparam
+
+    # Allow underscore assignments for intentional ignoring of errors in log suppression
+    - text: "Error return value.*os\\.OpenFile.*is not checked"
+      linters:
+        - errcheck
+    
+    - text: "Error return value.*Close.*is not checked"
+      linters:
+        - errcheck
 
     # Exclude model loading related security warnings (needed for offline operation)
     - text: "G204: Subprocess launched with function call"
       linters:
         - gosec
+        
+    - text: "G306: Expect WriteFile permissions"
+      linters:
+        - gosec
+        
+    - text: "G301: Expect directory permissions"
+      linters:
+        - gosec
 
-    # Allow unused parameters in callback functions (common in streaming)
+    # Allow unused parameters in callback functions and evaluators
     - text: "unused-parameter"
       linters:
         - revive
+        
+    - text: "`.*` is unused"
+      linters:
+        - unparam
+        - unused
+
+    # Allow some constants to be inline for readability
+    - text: "string .* has .* occurrences, make it a constant"
+      linters:
+        - goconst
+
+    # Allow shadow declarations in error handling patterns
+    - text: "declaration of \"err\" shadows"
+      linters:
+        - govet

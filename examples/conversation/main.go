@@ -28,7 +28,7 @@ func main() {
 
 	// Start a conversation with message history
 	messages := []chanollama.Message{}
-	
+
 	// First message
 	messages = append(messages, chanollama.Message{Role: "user", Content: "Hello, I'm planning a trip to Japan."})
 	response1, err := client.Chat(messages)

@@ -32,13 +32,13 @@ func main() {
 	}
 
 	fmt.Println("Streaming response from technical assistant:")
-	
+
 	// Add system prompt to messages
 	systemMessages := []chanollama.Message{
 		{Role: "system", Content: "You are a helpful assistant specialized in technical documentation."},
 	}
 	systemMessages = append(systemMessages, messages...)
-	
+
 	response := client.ChatStream(systemMessages, func(token string) {
 		fmt.Print(token)
 	})
@@ -47,7 +47,7 @@ func main() {
 		log.Printf("Error: %v", response.Error)
 		return
 	}
-	
+
 	fmt.Println()
 
 	// Example completed - advanced configuration demonstrated

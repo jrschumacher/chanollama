@@ -55,7 +55,7 @@ func (sae *SafeAgentEngine) handleError(err error) {
 
 	if isContextError {
 		sae.errorCount++
-		
+
 		// If we've had too many context errors, disable LLM evaluation
 		if sae.errorCount >= sae.maxErrors && sae.IsLLMEvaluationEnabled() {
 			fmt.Printf("⚠️  Context overflow detected. Switching to keyword-based agent selection.\n")
@@ -84,6 +84,6 @@ func (sae *SafeAgentEngine) GetCurrentAgent(query string) (*Agent, error) {
 		}
 		return nil, fmt.Errorf("agent evaluator not available")
 	}
-	
+
 	return sae.AgentEngine.GetCurrentAgent(query)
 }

@@ -120,19 +120,19 @@ func (tp *TextProcessor) ProcessText(text string) string {
 func (tp *TextProcessor) cleanWithCodePreservation(text string) string {
 	// Regex to match code blocks (``` or ``` language)
 	codeBlockRegex := regexp.MustCompile("(?s)```[\\w]*\\s*\\n(.*?)\\n```")
-	
+
 	// Find all code blocks and their positions
 	codeBlocks := codeBlockRegex.FindAllString(text, -1)
 	codeBlockPositions := codeBlockRegex.FindAllStringIndex(text, -1)
-	
+
 	// Process text outside code blocks
 	result := text
 	offset := 0
-	
+
 	for i, pos := range codeBlockPositions {
 		start := pos[0] + offset
 		end := pos[1] + offset
-		
+
 		// Clean text before this code block
 		if start > 0 {
 			beforeBlock := result[:start]
@@ -143,7 +143,7 @@ func (tp *TextProcessor) cleanWithCodePreservation(text string) string {
 			start += lengthDiff
 			end += lengthDiff
 		}
-		
+
 		// Keep code block as-is (already clean)
 		// Move to after this code block
 		if i < len(codeBlockPositions)-1 {
@@ -157,12 +157,12 @@ func (tp *TextProcessor) cleanWithCodePreservation(text string) string {
 			}
 		}
 	}
-	
+
 	// If no code blocks found, clean normally
 	if len(codeBlocks) == 0 {
 		result = tp.cleanGeneral(result)
 	}
-	
+
 	return result
 }
 
@@ -171,18 +171,18 @@ func (tp *TextProcessor) cleanGeneral(text string) string {
 	// Remove excessive consecutive newlines (keep max 2)
 	multiNewlineRegex := regexp.MustCompile(`\n{3,}`)
 	result := multiNewlineRegex.ReplaceAllString(text, "\n\n")
-	
+
 	// Remove excessive spaces (keep single spaces)
 	multiSpaceRegex := regexp.MustCompile(` {2,}`)
 	result = multiSpaceRegex.ReplaceAllString(result, " ")
-	
+
 	// Remove trailing spaces on lines
 	lines := strings.Split(result, "\n")
 	for i, line := range lines {
 		lines[i] = strings.TrimRightFunc(line, unicode.IsSpace)
 	}
 	result = strings.Join(lines, "\n")
-	
+
 	return result
 }
 
@@ -194,12 +194,12 @@ func (tp *TextProcessor) ExtractKeywords(text string, maxKeywords int) []string 
 
 	// Convert to lowercase for processing
 	lowerText := strings.ToLower(text)
-	
+
 	// Remove punctuation and split into words
 	wordRegex := regexp.MustCompile(`[^\w\s]`)
 	cleanText := wordRegex.ReplaceAllString(lowerText, " ")
 	words := strings.Fields(cleanText)
-	
+
 	// Common stop words to filter out
 	stopWords := map[string]bool{
 		"the": true, "a": true, "an": true, "and": true, "or": true, "but": true,
@@ -212,7 +212,7 @@ func (tp *TextProcessor) ExtractKeywords(text string, maxKeywords int) []string 
 		"him": true, "her": true, "us": true, "them": true, "my": true, "your": true,
 		"his": true, "its": true, "our": true, "their": true,
 	}
-	
+
 	// Count word frequencies
 	wordFreq := make(map[string]int)
 	for _, word := range words {
@@ -222,18 +222,18 @@ func (tp *TextProcessor) ExtractKeywords(text string, maxKeywords int) []string 
 		}
 		wordFreq[word]++
 	}
-	
+
 	// Sort by frequency and return top keywords
 	type wordCount struct {
 		word  string
 		count int
 	}
-	
+
 	var wordCounts []wordCount
 	for word, count := range wordFreq {
 		wordCounts = append(wordCounts, wordCount{word, count})
 	}
-	
+
 	// Simple bubble sort by frequency (desc)
 	for i := 0; i < len(wordCounts)-1; i++ {
 		for j := 0; j < len(wordCounts)-i-1; j++ {
@@ -242,18 +242,18 @@ func (tp *TextProcessor) ExtractKeywords(text string, maxKeywords int) []string 
 			}
 		}
 	}
-	
+
 	// Extract top keywords
 	var keywords []string
 	maxResults := maxKeywords
 	if len(wordCounts) < maxResults {
 		maxResults = len(wordCounts)
 	}
-	
+
 	for i := 0; i < maxResults; i++ {
 		keywords = append(keywords, wordCounts[i].word)
 	}
-	
+
 	return keywords
 }
 
@@ -262,16 +262,16 @@ func (tp *TextProcessor) TruncateText(text string, maxLength int) string {
 	if len(text) <= maxLength {
 		return text
 	}
-	
+
 	// Find last space before maxLength
 	truncated := text[:maxLength]
 	lastSpace := strings.LastIndex(truncated, " ")
-	
+
 	if lastSpace > 0 && lastSpace > maxLength/2 {
 		// Truncate at last space if it's not too early
 		return text[:lastSpace] + "..."
 	}
-	
+
 	// Hard truncate if no good space found
 	return text[:maxLength-3] + "..."
 }
@@ -293,9 +293,9 @@ func (rm *ResourceMonitor) SetEnabled(enabled bool) {
 
 // ResourceUsage represents current resource usage
 type ResourceUsage struct {
-	MemoryMB     uint64  `json:"memory_mb"`
-	GoroutineCount int   `json:"goroutine_count"`
-	CPUPercent   float64 `json:"cpu_percent,omitempty"`
+	MemoryMB       uint64  `json:"memory_mb"`
+	GoroutineCount int     `json:"goroutine_count"`
+	CPUPercent     float64 `json:"cpu_percent,omitempty"`
 }
 
 // GetCurrentUsage returns current resource usage
@@ -303,10 +303,10 @@ func (rm *ResourceMonitor) GetCurrentUsage() ResourceUsage {
 	if !rm.enabled {
 		return ResourceUsage{}
 	}
-	
+
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
-	
+
 	return ResourceUsage{
 		MemoryMB:       memStats.Alloc / 1024 / 1024,
 		GoroutineCount: runtime.NumGoroutine(),
@@ -319,17 +319,17 @@ func (rm *ResourceMonitor) ShouldLimitProcessing(maxMemoryMB uint64, maxGoroutin
 	if !rm.enabled {
 		return false
 	}
-	
+
 	usage := rm.GetCurrentUsage()
-	
+
 	if maxMemoryMB > 0 && usage.MemoryMB > maxMemoryMB {
 		return true
 	}
-	
+
 	if maxGoroutines > 0 && usage.GoroutineCount > maxGoroutines {
 		return true
 	}
-	
+
 	return false
 }
 
@@ -365,16 +365,16 @@ func (cm *ConversationManager) TruncateMessages(messages []Message) []Message {
 	if len(messages) == 0 {
 		return messages
 	}
-	
+
 	// Quick check - if we're under limits, no truncation needed
 	if !cm.needsTruncation(messages) {
 		return messages
 	}
-	
+
 	// Separate system messages from others
 	var systemMessages []Message
 	var otherMessages []Message
-	
+
 	for _, msg := range messages {
 		if msg.IsSystem() && cm.config.PreserveSystem {
 			systemMessages = append(systemMessages, msg)
@@ -382,14 +382,14 @@ func (cm *ConversationManager) TruncateMessages(messages []Message) []Message {
 			otherMessages = append(otherMessages, msg)
 		}
 	}
-	
+
 	// Calculate effective limits for non-system messages
 	systemMessageCount := len(systemMessages)
 	effectiveMaxMessages := cm.config.MaxMessages - systemMessageCount
 	if effectiveMaxMessages < 0 {
 		effectiveMaxMessages = 0
 	}
-	
+
 	// Apply truncation strategy with adjusted limits
 	var truncatedOthers []Message
 	switch cm.config.TruncationStrategy {
@@ -405,10 +405,10 @@ func (cm *ConversationManager) TruncateMessages(messages []Message) []Message {
 		// Default to oldest truncation
 		truncatedOthers = cm.truncateOldestWithLimit(otherMessages, effectiveMaxMessages)
 	}
-	
+
 	// Combine system messages with truncated others
 	result := append(systemMessages, truncatedOthers...)
-	
+
 	// Log truncation if enabled
 	if cm.config.EnableLogging && len(result) < len(messages) {
 		originalCount := len(messages)
@@ -418,7 +418,7 @@ func (cm *ConversationManager) TruncateMessages(messages []Message) []Message {
 		_ = originalCount
 		_ = truncatedCount
 	}
-	
+
 	return result
 }
 
@@ -428,17 +428,15 @@ func (cm *ConversationManager) needsTruncation(messages []Message) bool {
 	if len(messages) > cm.config.MaxMessages {
 		return true
 	}
-	
+
 	// Check token count limit
 	totalTokens := cm.tokenEstimator.EstimateMessagesTokens(messages)
 	if totalTokens > cm.config.MaxTokens {
 		return true
 	}
-	
+
 	return false
 }
-
-
 
 // EstimateTokens estimates tokens for a slice of messages
 func (cm *ConversationManager) EstimateTokens(messages []Message) int {
@@ -449,31 +447,31 @@ func (cm *ConversationManager) EstimateTokens(messages []Message) int {
 func (cm *ConversationManager) GetTruncationInfo(messages []Message) TruncationInfo {
 	originalCount := len(messages)
 	originalTokens := cm.tokenEstimator.EstimateMessagesTokens(messages)
-	
+
 	truncated := cm.TruncateMessages(messages)
 	truncatedCount := len(truncated)
 	truncatedTokens := cm.tokenEstimator.EstimateMessagesTokens(truncated)
-	
+
 	return TruncationInfo{
-		OriginalCount:    originalCount,
-		OriginalTokens:   originalTokens,
-		TruncatedCount:   truncatedCount,
-		TruncatedTokens:  truncatedTokens,
-		WillTruncate:     originalCount != truncatedCount,
-		RemovedMessages:  originalCount - truncatedCount,
-		SavedTokens:      originalTokens - truncatedTokens,
+		OriginalCount:   originalCount,
+		OriginalTokens:  originalTokens,
+		TruncatedCount:  truncatedCount,
+		TruncatedTokens: truncatedTokens,
+		WillTruncate:    originalCount != truncatedCount,
+		RemovedMessages: originalCount - truncatedCount,
+		SavedTokens:     originalTokens - truncatedTokens,
 	}
 }
 
 // TruncationInfo provides information about conversation truncation
 type TruncationInfo struct {
-	OriginalCount    int  `json:"original_count"`
-	OriginalTokens   int  `json:"original_tokens"`
-	TruncatedCount   int  `json:"truncated_count"`
-	TruncatedTokens  int  `json:"truncated_tokens"`
-	WillTruncate     bool `json:"will_truncate"`
-	RemovedMessages  int  `json:"removed_messages"`
-	SavedTokens      int  `json:"saved_tokens"`
+	OriginalCount   int  `json:"original_count"`
+	OriginalTokens  int  `json:"original_tokens"`
+	TruncatedCount  int  `json:"truncated_count"`
+	TruncatedTokens int  `json:"truncated_tokens"`
+	WillTruncate    bool `json:"will_truncate"`
+	RemovedMessages int  `json:"removed_messages"`
+	SavedTokens     int  `json:"saved_tokens"`
 }
 
 // truncateOldestWithLimit removes oldest messages until within limits
@@ -481,13 +479,13 @@ func (cm *ConversationManager) truncateOldestWithLimit(messages []Message, maxMe
 	if len(messages) == 0 {
 		return messages
 	}
-	
+
 	// Apply message count limit first
 	if len(messages) > maxMessages {
 		start := len(messages) - maxMessages
 		messages = messages[start:]
 	}
-	
+
 	// Apply token limit by removing oldest messages
 	for len(messages) > 0 {
 		tokens := cm.tokenEstimator.EstimateMessagesTokens(messages)
@@ -496,7 +494,7 @@ func (cm *ConversationManager) truncateOldestWithLimit(messages []Message, maxMe
 		}
 		messages = messages[1:] // Remove oldest message
 	}
-	
+
 	return messages
 }
 
@@ -505,12 +503,12 @@ func (cm *ConversationManager) truncateNewestWithLimit(messages []Message, maxMe
 	if len(messages) == 0 {
 		return messages
 	}
-	
+
 	// Apply message count limit first
 	if len(messages) > maxMessages {
 		messages = messages[:maxMessages]
 	}
-	
+
 	// Apply token limit by removing newest messages
 	for len(messages) > 0 {
 		tokens := cm.tokenEstimator.EstimateMessagesTokens(messages)
@@ -519,7 +517,7 @@ func (cm *ConversationManager) truncateNewestWithLimit(messages []Message, maxMe
 		}
 		messages = messages[:len(messages)-1] // Remove newest message
 	}
-	
+
 	return messages
 }
 
@@ -528,41 +526,41 @@ func (cm *ConversationManager) truncateMiddleWithLimit(messages []Message, maxMe
 	if len(messages) == 0 {
 		return messages
 	}
-	
+
 	// If we have very few messages, fall back to oldest truncation
 	if len(messages) <= 3 {
 		return cm.truncateOldestWithLimit(messages, maxMessages)
 	}
-	
+
 	// Apply message count limit by keeping first and last messages
 	if len(messages) > maxMessages {
 		keepCount := maxMessages
 		if keepCount < 2 {
 			keepCount = 2
 		}
-		
+
 		// Keep first and last messages, distribute the rest
 		firstCount := keepCount / 2
 		lastCount := keepCount - firstCount
-		
+
 		result := make([]Message, 0, keepCount)
 		result = append(result, messages[:firstCount]...)
 		result = append(result, messages[len(messages)-lastCount:]...)
 		messages = result
 	}
-	
+
 	// Apply token limit by removing middle messages
 	for len(messages) > 2 {
 		tokens := cm.tokenEstimator.EstimateMessagesTokens(messages)
 		if tokens <= cm.config.MaxTokens {
 			break
 		}
-		
+
 		// Remove middle message
 		middleIndex := len(messages) / 2
 		messages = append(messages[:middleIndex], messages[middleIndex+1:]...)
 	}
-	
+
 	return messages
 }
 
@@ -571,7 +569,7 @@ func (cm *ConversationManager) truncateWithSummarization(messages []Message) []M
 	if len(messages) == 0 {
 		return messages
 	}
-	
+
 	// For now, fall back to oldest truncation
 	// TODO: Implement actual summarization using the model
 	// This would require access to the model for inference
@@ -585,6 +583,6 @@ func (cm *ConversationManager) truncateWithSummarization(messages []Message) []M
 	if effectiveMaxMessages < 0 {
 		effectiveMaxMessages = 0
 	}
-	
+
 	return cm.truncateOldestWithLimit(messages, effectiveMaxMessages)
 }

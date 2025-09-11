@@ -22,11 +22,11 @@ type InputValidator struct {
 // NewInputValidator creates a validator with secure defaults
 func NewInputValidator() *InputValidator {
 	return &InputValidator{
-		MaxLength:      10000, // 10k characters max
-		MinLength:      1,     // At least 1 character
+		MaxLength:      10000,      // 10k characters max
+		MinLength:      1,          // At least 1 character
 		ForbiddenWords: []string{}, // Can be configured per application
-		AllowMarkdown:  true,  // Allow basic markdown
-		StripHTML:      true,  // Strip HTML by default
+		AllowMarkdown:  true,       // Allow basic markdown
+		StripHTML:      true,       // Strip HTML by default
 	}
 }
 
@@ -65,39 +65,39 @@ func (iv *InputValidator) ValidateInput(input string) (string, error) {
 	if input == "" {
 		return "", fmt.Errorf("input cannot be empty")
 	}
-	
+
 	// Step 1: Basic length validation
 	if len(input) < iv.MinLength {
 		return "", fmt.Errorf("input too short (minimum %d characters)", iv.MinLength)
 	}
-	
+
 	if len(input) > iv.MaxLength {
 		return "", fmt.Errorf("input too long (maximum %d characters)", iv.MaxLength)
 	}
-	
+
 	// Step 2: UTF-8 validation
 	if !utf8.ValidString(input) {
 		return "", fmt.Errorf("input contains invalid UTF-8 characters")
 	}
-	
+
 	// Step 3: Control character filtering
 	sanitized := iv.removeControlCharacters(input)
-	
+
 	// Step 4: HTML stripping if enabled
 	if iv.StripHTML {
 		sanitized = iv.stripHTML(sanitized)
 	}
-	
+
 	// Step 5: Forbidden words check
 	if err := iv.checkForbiddenWords(sanitized); err != nil {
 		return "", err
 	}
-	
+
 	// Step 6: Final length check after sanitization
 	if len(sanitized) < iv.MinLength {
 		return "", fmt.Errorf("input too short after sanitization")
 	}
-	
+
 	return strings.TrimSpace(sanitized), nil
 }
 
@@ -107,13 +107,13 @@ func (iv *InputValidator) ValidateMessage(msg Message) (Message, error) {
 	if msg.Role != "system" && msg.Role != "user" && msg.Role != "assistant" {
 		return Message{}, fmt.Errorf("invalid message role: %s", msg.Role)
 	}
-	
+
 	// Validate and sanitize content
 	sanitizedContent, err := iv.ValidateInput(msg.Content)
 	if err != nil {
 		return Message{}, fmt.Errorf("invalid message content: %w", err)
 	}
-	
+
 	return Message{
 		Role:    msg.Role,
 		Content: sanitizedContent,
@@ -125,7 +125,7 @@ func (iv *InputValidator) ValidateMessages(messages []Message) ([]Message, error
 	if len(messages) == 0 {
 		return nil, fmt.Errorf("message list cannot be empty")
 	}
-	
+
 	var validated []Message
 	for i, msg := range messages {
 		validatedMsg, err := iv.ValidateMessage(msg)
@@ -134,30 +134,30 @@ func (iv *InputValidator) ValidateMessages(messages []Message) ([]Message, error
 		}
 		validated = append(validated, validatedMsg)
 	}
-	
+
 	return validated, nil
 }
 
 // removeControlCharacters removes dangerous control characters
 func (iv *InputValidator) removeControlCharacters(input string) string {
 	var result strings.Builder
-	
+
 	for _, r := range input {
 		// Allow normal whitespace characters
 		if unicode.IsSpace(r) {
 			result.WriteRune(r)
 			continue
 		}
-		
+
 		// Allow printable characters
 		if unicode.IsPrint(r) {
 			result.WriteRune(r)
 			continue
 		}
-		
+
 		// Skip control characters
 	}
-	
+
 	return result.String()
 }
 
@@ -166,7 +166,7 @@ func (iv *InputValidator) stripHTML(input string) string {
 	// Remove HTML tags
 	htmlTagRegex := regexp.MustCompile(`<[^>]*>`)
 	result := htmlTagRegex.ReplaceAllString(input, "")
-	
+
 	// Decode common HTML entities
 	result = strings.ReplaceAll(result, "&lt;", "<")
 	result = strings.ReplaceAll(result, "&gt;", ">")
@@ -174,20 +174,20 @@ func (iv *InputValidator) stripHTML(input string) string {
 	result = strings.ReplaceAll(result, "&quot;", "\"")
 	result = strings.ReplaceAll(result, "&#39;", "'")
 	result = strings.ReplaceAll(result, "&nbsp;", " ")
-	
+
 	return result
 }
 
 // checkForbiddenWords checks for forbidden words/phrases
 func (iv *InputValidator) checkForbiddenWords(input string) error {
 	lowerInput := strings.ToLower(input)
-	
+
 	for _, word := range iv.ForbiddenWords {
 		if strings.Contains(lowerInput, strings.ToLower(word)) {
 			return fmt.Errorf("input contains forbidden content")
 		}
 	}
-	
+
 	return nil
 }
 
@@ -202,8 +202,8 @@ type FileValidator struct {
 // NewFileValidator creates a validator with secure defaults
 func NewFileValidator() *FileValidator {
 	return &FileValidator{
-		MaxFileSize: 10 * 1024 * 1024, // 10MB default
-		MaxFiles:    1000,              // 1000 files max
+		MaxFileSize: 10 * 1024 * 1024,                // 10MB default
+		MaxFiles:    1000,                            // 1000 files max
 		AllowedExts: []string{".md", ".txt", ".rst"}, // Only documentation files
 		ForbiddenPaths: []string{
 			"/etc", "/var", "/usr", "/bin", "/sbin", "/root",
@@ -238,33 +238,33 @@ func (fv *FileValidator) ValidateFile(path string) error {
 	if strings.Contains(cleanPath, "..") {
 		return fmt.Errorf("path traversal detected: %s", path)
 	}
-	
+
 	// Step 2: Absolute path resolution and validation
 	absPath, err := filepath.Abs(cleanPath)
 	if err != nil {
 		return fmt.Errorf("failed to resolve absolute path: %w", err)
 	}
-	
+
 	// Step 3: Forbidden path protection
 	if err := fv.checkForbiddenPaths(absPath); err != nil {
 		return err
 	}
-	
+
 	// Step 4: File extension validation
 	if err := fv.checkFileExtension(absPath); err != nil {
 		return err
 	}
-	
+
 	// Step 5: File existence and accessibility
 	if err := fv.checkFileAccess(absPath); err != nil {
 		return err
 	}
-	
+
 	// Step 6: File size validation
 	if err := fv.checkFileSize(absPath); err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -275,27 +275,27 @@ func (fv *FileValidator) ValidateDirectory(dirPath string) error {
 	if strings.Contains(cleanPath, "..") {
 		return fmt.Errorf("path traversal detected in directory: %s", dirPath)
 	}
-	
+
 	absPath, err := filepath.Abs(cleanPath)
 	if err != nil {
 		return fmt.Errorf("failed to resolve directory path: %w", err)
 	}
-	
+
 	// Check forbidden paths
 	if err := fv.checkForbiddenPaths(absPath); err != nil {
 		return err
 	}
-	
+
 	// Verify directory exists and is accessible
 	info, err := os.Stat(absPath)
 	if err != nil {
 		return fmt.Errorf("cannot access directory: %w", err)
 	}
-	
+
 	if !info.IsDir() {
 		return fmt.Errorf("path is not a directory: %s", absPath)
 	}
-	
+
 	return nil
 }
 
@@ -304,30 +304,30 @@ func (fv *FileValidator) CountFilesInDirectory(dirPath string) (int, error) {
 	if err := fv.ValidateDirectory(dirPath); err != nil {
 		return 0, err
 	}
-	
+
 	count := 0
 	err := filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err // Stop on any error
 		}
-		
+
 		if info.IsDir() {
 			return nil // Skip directories
 		}
-		
+
 		// Check if file extension is allowed
 		if fv.IsAllowedExtension(filepath.Ext(path)) {
 			count++
-			
+
 			// Stop if we exceed max files
 			if count > fv.MaxFiles {
 				return fmt.Errorf("directory contains too many files (>%d)", fv.MaxFiles)
 			}
 		}
-		
+
 		return nil
 	})
-	
+
 	return count, err
 }
 
@@ -347,19 +347,19 @@ func (fv *FileValidator) ValidateFileContent(content string) error {
 		`\.\./`,
 		`\.\.\\`,
 	}
-	
+
 	lowerContent := strings.ToLower(content)
 	for _, pattern := range suspiciousPatterns {
 		if strings.Contains(lowerContent, pattern) {
 			return fmt.Errorf("suspicious content pattern detected: %s", pattern)
 		}
 	}
-	
+
 	// Content size validation
 	if len(content) > int(fv.MaxFileSize) {
 		return fmt.Errorf("content too large: %d bytes (max: %d)", len(content), fv.MaxFileSize)
 	}
-	
+
 	return nil
 }
 
@@ -380,11 +380,11 @@ func (fv *FileValidator) checkFileExtension(path string) error {
 	if ext == "" {
 		return fmt.Errorf("file has no extension: %s", path)
 	}
-	
+
 	if !fv.IsAllowedExtension(ext) {
 		return fmt.Errorf("forbidden file extension: %s (allowed: %v)", ext, fv.AllowedExts)
 	}
-	
+
 	return nil
 }
 
@@ -408,18 +408,18 @@ func (fv *FileValidator) checkFileAccess(path string) error {
 		}
 		return fmt.Errorf("cannot access file: %w", err)
 	}
-	
+
 	if info.IsDir() {
 		return fmt.Errorf("path is a directory, not a file: %s", path)
 	}
-	
+
 	// Test file readability
 	file, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("file is not readable: %w", err)
 	}
 	file.Close()
-	
+
 	return nil
 }
 
@@ -429,15 +429,15 @@ func (fv *FileValidator) checkFileSize(path string) error {
 	if err != nil {
 		return fmt.Errorf("cannot stat file: %w", err)
 	}
-	
+
 	if info.Size() == 0 {
 		return fmt.Errorf("file is empty: %s", path)
 	}
-	
+
 	if info.Size() > fv.MaxFileSize {
 		return fmt.Errorf("file too large: %d bytes (max: %d)", info.Size(), fv.MaxFileSize)
 	}
-	
+
 	return nil
 }
 
@@ -455,17 +455,17 @@ func (uv *URLValidator) ValidateURL(url string) error {
 	if url == "" {
 		return fmt.Errorf("URL is empty")
 	}
-	
+
 	// Length check
 	if len(url) > 2048 {
 		return fmt.Errorf("URL too long: %d characters (max: 2048)", len(url))
 	}
-	
+
 	// Protocol validation
 	if !strings.HasPrefix(url, "https://") && !strings.HasPrefix(url, "http://") {
 		return fmt.Errorf("invalid protocol: URL must start with http:// or https://")
 	}
-	
+
 	// Block local/private network access
 	forbiddenPatterns := []string{
 		`://localhost`,
@@ -475,16 +475,16 @@ func (uv *URLValidator) ValidateURL(url string) error {
 		`://172\.(1[6-9]|2[0-9]|3[01])\.`,
 		`://169\.254\.`, // Link-local
 		`://0\.`,
-		`://::1`,       // IPv6 localhost
+		`://::1`, // IPv6 localhost
 	}
-	
+
 	for _, pattern := range forbiddenPatterns {
 		matched, _ := regexp.MatchString(pattern, strings.ToLower(url))
 		if matched {
 			return fmt.Errorf("access to local/private networks is forbidden")
 		}
 	}
-	
+
 	return nil
 }
 
@@ -496,11 +496,11 @@ type SafeInputSanitizer struct {
 // NewSafeInputSanitizer creates a sanitizer with safe defaults
 func NewSafeInputSanitizer() *SafeInputSanitizer {
 	validator := NewInputValidator().
-		WithMaxLength(5000).   // 5k character limit
-		WithMinLength(1).      // At least 1 character
-		WithHTMLStripping(true). // Strip HTML
+		WithMaxLength(5000).      // 5k character limit
+		WithMinLength(1).         // At least 1 character
+		WithHTMLStripping(true).  // Strip HTML
 		WithMarkdownAllowed(true) // Allow markdown
-	
+
 	return &SafeInputSanitizer{
 		validator: validator,
 	}
@@ -523,36 +523,36 @@ func (sis *SafeInputSanitizer) SanitizeMessages(messages []Message) ([]Message, 
 
 // ContentFilter provides additional content filtering capabilities
 type ContentFilter struct {
-	BlockProfanity   bool
-	BlockPII         bool // Personally Identifiable Information
+	BlockProfanity     bool
+	BlockPII           bool // Personally Identifiable Information
 	BlockCodeInjection bool
 }
 
 // NewContentFilter creates a filter with security defaults
 func NewContentFilter() *ContentFilter {
 	return &ContentFilter{
-		BlockProfanity:      false, // Application-specific
-		BlockPII:           true,   // Block PII by default
-		BlockCodeInjection: true,   // Block potential code injection
+		BlockProfanity:     false, // Application-specific
+		BlockPII:           true,  // Block PII by default
+		BlockCodeInjection: true,  // Block potential code injection
 	}
 }
 
 // FilterContent applies content filtering rules
 func (cf *ContentFilter) FilterContent(input string) (string, error) {
 	result := input
-	
+
 	// Check for potential code injection patterns
 	if cf.BlockCodeInjection {
 		if err := cf.checkCodeInjection(result); err != nil {
 			return "", err
 		}
 	}
-	
+
 	// Check for PII patterns
 	if cf.BlockPII {
 		result = cf.maskPII(result)
 	}
-	
+
 	return result, nil
 }
 
@@ -572,14 +572,14 @@ func (cf *ContentFilter) checkCodeInjection(input string) error {
 		"subprocess",
 		"shell_exec",
 	}
-	
+
 	lowerInput := strings.ToLower(input)
 	for _, pattern := range dangerousPatterns {
 		if strings.Contains(lowerInput, pattern) {
 			return fmt.Errorf("potentially dangerous content detected")
 		}
 	}
-	
+
 	return nil
 }
 
@@ -588,14 +588,14 @@ func (cf *ContentFilter) maskPII(input string) string {
 	// Email pattern
 	emailRegex := regexp.MustCompile(`\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b`)
 	result := emailRegex.ReplaceAllString(input, "[EMAIL]")
-	
+
 	// Phone number pattern (basic)
 	phoneRegex := regexp.MustCompile(`\b\d{3}[-.]?\d{3}[-.]?\d{4}\b`)
 	result = phoneRegex.ReplaceAllString(result, "[PHONE]")
-	
+
 	// SSN pattern (basic)
 	ssnRegex := regexp.MustCompile(`\b\d{3}-\d{2}-\d{4}\b`)
 	result = ssnRegex.ReplaceAllString(result, "[SSN]")
-	
+
 	return result
 }

@@ -17,7 +17,7 @@ var (
 
 // Message represents a chat message
 type Message struct {
-	Role      string            `json:"role"`      // "system", "user", "assistant"
+	Role      string            `json:"role"` // "system", "user", "assistant"
 	Content   string            `json:"content"`
 	Timestamp time.Time         `json:"timestamp,omitempty"`
 	Metadata  map[string]string `json:"metadata,omitempty"`
@@ -191,20 +191,20 @@ func (r *Response) ToMessage() Message {
 type Config struct {
 	Model       string        `json:"model"`       // Required: e.g. "llama2:7b" or path to GGUF file
 	Timeout     time.Duration `json:"timeout"`     // Default: 30s
-	MaxTokens   int          `json:"max_tokens"`  // Default: 2048
-	Temperature float64      `json:"temperature"` // Default: 0.7
-	
+	MaxTokens   int           `json:"max_tokens"`  // Default: 2048
+	Temperature float64       `json:"temperature"` // Default: 0.7
+
 	// Offline mode configuration
 	OfflineMode bool   `json:"offline_mode"` // Enable direct model execution
 	ModelPath   string `json:"model_path"`   // Path to GGUF model file (for offline mode)
-	
+
 	// Hardware settings (offline mode)
 	UseGPU      bool `json:"use_gpu"`      // Enable GPU acceleration
 	NumThreads  int  `json:"num_threads"`  // Number of CPU threads
 	ContextSize int  `json:"context_size"` // Context window size
-	
+
 	// Logging settings
-	Verbose     bool `json:"verbose"`      // Enable verbose logging
+	Verbose bool `json:"verbose"` // Enable verbose logging
 }
 
 // DefaultConfig returns a sensible default configuration
@@ -214,16 +214,16 @@ func DefaultConfig(model string) Config {
 		Timeout:     30 * time.Second,
 		MaxTokens:   2048,
 		Temperature: 0.7,
-		
+
 		// Offline mode defaults
 		OfflineMode: false,
 		ModelPath:   "",
 		UseGPU:      false,
 		NumThreads:  4,
 		ContextSize: 4096,
-		
+
 		// Logging defaults
-		Verbose:     false,
+		Verbose: false,
 	}
 }
 
@@ -234,7 +234,7 @@ func DefaultOfflineConfig(modelPath string) Config {
 		Timeout:     60 * time.Second, // Longer timeout for offline processing
 		MaxTokens:   2048,
 		Temperature: 0.7,
-		
+
 		// Offline mode enabled
 		OfflineMode: true,
 		ModelPath:   modelPath,
@@ -368,12 +368,12 @@ func (c *Conversation) ClearExceptSystem() {
 // addMessage adds a message and handles trimming
 func (c *Conversation) addMessage(msg Message) {
 	c.Messages = append(c.Messages, msg)
-	
+
 	// Trim if we exceed max messages (keep system messages)
 	if len(c.Messages) > c.MaxMessages {
 		var systemMsgs []Message
 		var otherMsgs []Message
-		
+
 		for _, m := range c.Messages {
 			if m.Role == "system" {
 				systemMsgs = append(systemMsgs, m)
@@ -381,13 +381,13 @@ func (c *Conversation) addMessage(msg Message) {
 				otherMsgs = append(otherMsgs, m)
 			}
 		}
-		
+
 		// Keep system messages + recent other messages
 		keepCount := c.MaxMessages - len(systemMsgs)
 		if keepCount > 0 && len(otherMsgs) > keepCount {
 			otherMsgs = otherMsgs[len(otherMsgs)-keepCount:]
 		}
-		
+
 		c.Messages = append(systemMsgs, otherMsgs...)
 	}
 }
@@ -414,26 +414,26 @@ const (
 
 // ConversationConfig defines configuration for conversation management
 type ConversationConfig struct {
-	MaxTokens          int                `json:"max_tokens"`           // Maximum tokens before truncation (0 = auto-detect from model)
-	MaxMessages        int                `json:"max_messages"`         // Maximum messages before truncation (fallback)
-	TruncationStrategy TruncationStrategy `json:"truncation_strategy"`  // How to truncate messages
-	PreserveSystem     bool               `json:"preserve_system"`      // Always preserve system message during truncation
-	AutoDetectLimits   bool               `json:"auto_detect_limits"`   // Automatically detect model limits
-	BatchSize          int                `json:"batch_size"`           // Model's batch size limit (0 = auto-detect)
-	EnableLogging      bool               `json:"enable_logging"`       // Log truncation events
-	SummaryPrompt      string             `json:"summary_prompt"`       // Prompt for summarization strategy
+	MaxTokens          int                `json:"max_tokens"`          // Maximum tokens before truncation (0 = auto-detect from model)
+	MaxMessages        int                `json:"max_messages"`        // Maximum messages before truncation (fallback)
+	TruncationStrategy TruncationStrategy `json:"truncation_strategy"` // How to truncate messages
+	PreserveSystem     bool               `json:"preserve_system"`     // Always preserve system message during truncation
+	AutoDetectLimits   bool               `json:"auto_detect_limits"`  // Automatically detect model limits
+	BatchSize          int                `json:"batch_size"`          // Model's batch size limit (0 = auto-detect)
+	EnableLogging      bool               `json:"enable_logging"`      // Log truncation events
+	SummaryPrompt      string             `json:"summary_prompt"`      // Prompt for summarization strategy
 }
 
 // DefaultConversationConfig returns sensible defaults for conversation management
 func DefaultConversationConfig() ConversationConfig {
 	return ConversationConfig{
-		MaxTokens:          0,                    // Auto-detect from model
-		MaxMessages:        50,                   // Fallback limit
-		TruncationStrategy: TruncationOldest,     // Remove oldest messages first
-		PreserveSystem:     true,                 // Always preserve system messages
-		AutoDetectLimits:   true,                 // Enable auto-detection
-		BatchSize:          0,                    // Auto-detect from model
-		EnableLogging:      false,                // Disable logging by default
+		MaxTokens:          0,                // Auto-detect from model
+		MaxMessages:        50,               // Fallback limit
+		TruncationStrategy: TruncationOldest, // Remove oldest messages first
+		PreserveSystem:     true,             // Always preserve system messages
+		AutoDetectLimits:   true,             // Enable auto-detection
+		BatchSize:          0,                // Auto-detect from model
+		EnableLogging:      false,            // Disable logging by default
 		SummaryPrompt:      "Summarize the following conversation history concisely:",
 	}
 }
@@ -453,9 +453,9 @@ type ContextSummarizer interface {
 
 // Internal Ollama API types
 type ollamaRequest struct {
-	Model    string    `json:"model"`
-	Messages []Message `json:"messages"`
-	Stream   bool      `json:"stream"`
+	Model    string                 `json:"model"`
+	Messages []Message              `json:"messages"`
+	Stream   bool                   `json:"stream"`
 	Options  map[string]interface{} `json:"options,omitempty"`
 }
 

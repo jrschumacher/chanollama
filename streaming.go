@@ -29,11 +29,11 @@ func NewStreamingEngineWithConfig(config Config) *StreamingEngine {
 func (s *StreamingEngine) ChatStreamChan(messages []Message) (<-chan string, <-chan error) {
 	tokenCh := make(chan string, 100)
 	errorCh := make(chan error, 1)
-	
+
 	go func() {
 		defer close(tokenCh)
 		defer close(errorCh)
-		
+
 		response := s.client.ChatStream(messages, func(token string) {
 			select {
 			case tokenCh <- token:
@@ -42,12 +42,12 @@ func (s *StreamingEngine) ChatStreamChan(messages []Message) (<-chan string, <-c
 				// Channel full, skip token (non-blocking)
 			}
 		})
-		
+
 		if response.Error != nil {
 			errorCh <- response.Error
 		}
 	}()
-	
+
 	return tokenCh, errorCh
 }
 
@@ -55,17 +55,17 @@ func (s *StreamingEngine) ChatStreamChan(messages []Message) (<-chan string, <-c
 func (s *StreamingEngine) ChatStreamChanWithTimeout(messages []Message, timeout time.Duration) (<-chan string, <-chan error) {
 	tokenCh := make(chan string, 100)
 	errorCh := make(chan error, 1)
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	
+
 	go func() {
 		defer close(tokenCh)
 		defer close(errorCh)
 		defer cancel()
-		
+
 		done := make(chan struct{})
 		var streamErr error
-		
+
 		// Start streaming in another goroutine
 		go func() {
 			defer close(done)
@@ -80,12 +80,12 @@ func (s *StreamingEngine) ChatStreamChanWithTimeout(messages []Message, timeout 
 					// Channel full, skip token (non-blocking)
 				}
 			})
-			
+
 			if response.Error != nil {
 				streamErr = response.Error
 			}
 		}()
-		
+
 		// Wait for completion or timeout
 		select {
 		case <-done:
@@ -96,7 +96,7 @@ func (s *StreamingEngine) ChatStreamChanWithTimeout(messages []Message, timeout 
 			errorCh <- fmt.Errorf("streaming timeout after %v", timeout)
 		}
 	}()
-	
+
 	return tokenCh, errorCh
 }
 
@@ -148,21 +148,21 @@ func (sc *StreamCollector) Collect(tokenCh <-chan string, errorCh <-chan error) 
 				default:
 					// No error
 				}
-				
+
 				// Return collected response
 				content := ""
 				for _, t := range sc.tokens {
 					content += t
 				}
-				
+
 				return &Response{
 					Content: content,
 					Tokens:  len(content) / 4, // Rough estimate
 				}, nil
 			}
-			
+
 			sc.tokens = append(sc.tokens, token)
-			
+
 		case err := <-errorCh:
 			if err != nil {
 				return &Response{Error: err}, err
@@ -188,14 +188,14 @@ func NewTokenBatcher(batchSize int, interval time.Duration) *TokenBatcher {
 // BatchTokens converts a token stream into batched chunks
 func (tb *TokenBatcher) BatchTokens(tokenCh <-chan string) <-chan []string {
 	batchCh := make(chan []string, 10)
-	
+
 	go func() {
 		defer close(batchCh)
-		
+
 		var batch []string
 		ticker := time.NewTicker(tb.interval)
 		defer ticker.Stop()
-		
+
 		for {
 			select {
 			case token, ok := <-tokenCh:
@@ -206,15 +206,15 @@ func (tb *TokenBatcher) BatchTokens(tokenCh <-chan string) <-chan []string {
 					}
 					return
 				}
-				
+
 				batch = append(batch, token)
-				
+
 				// Send batch if it reaches the size limit
 				if len(batch) >= tb.batchSize {
 					batchCh <- batch
 					batch = make([]string, 0)
 				}
-				
+
 			case <-ticker.C:
 				// Send batch on interval if any tokens exist
 				if len(batch) > 0 {
@@ -224,14 +224,14 @@ func (tb *TokenBatcher) BatchTokens(tokenCh <-chan string) <-chan []string {
 			}
 		}
 	}()
-	
+
 	return batchCh
 }
 
 // ConcurrentStreamer manages multiple concurrent streaming requests
 type ConcurrentStreamer struct {
-	engine   *StreamingEngine
-	maxConns int
+	engine    *StreamingEngine
+	maxConns  int
 	semaphore chan struct{}
 }
 
@@ -248,18 +248,18 @@ func NewConcurrentStreamer(model string, maxConnections int) *ConcurrentStreamer
 func (cs *ConcurrentStreamer) Stream(messages []Message) (<-chan string, <-chan error) {
 	tokenCh := make(chan string, 100)
 	errorCh := make(chan error, 1)
-	
+
 	go func() {
 		defer close(tokenCh)
 		defer close(errorCh)
-		
+
 		// Acquire semaphore
 		cs.semaphore <- struct{}{}
 		defer func() { <-cs.semaphore }()
-		
+
 		// Perform streaming
 		tokens, errors := cs.engine.ChatStreamChan(messages)
-		
+
 		// Forward tokens and errors
 		for {
 			select {
@@ -280,7 +280,7 @@ func (cs *ConcurrentStreamer) Stream(messages []Message) (<-chan string, <-chan 
 			}
 		}
 	}()
-	
+
 	return tokenCh, errorCh
 }
 

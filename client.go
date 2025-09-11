@@ -34,7 +34,7 @@ func New(modelPath string) *Client {
 // NewWithConfig creates a new client with custom configuration
 func NewWithConfig(modelPath string, config Config) *Client {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	// Create conversation manager with appropriate batch size
 	conversationConfig := DefaultConversationConfig()
 	if config.ContextSize > 0 {
@@ -44,7 +44,7 @@ func NewWithConfig(modelPath string, config Config) *Client {
 		// Disable auto-detection since we're setting explicit values
 		conversationConfig.AutoDetectLimits = false
 	}
-	
+
 	return &Client{
 		config:              config,
 		modelPath:           modelPath,
@@ -60,102 +60,102 @@ func NewWithConfig(modelPath string, config Config) *Client {
 func (c *Client) Initialize() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	if c.initialized {
 		return nil
 	}
-	
+
 	// Verify model file exists
 	if _, err := os.Stat(c.modelPath); os.IsNotExist(err) {
 		return fmt.Errorf("model file not found: %s", c.modelPath)
 	}
-	
+
 	// Suppress verbose loading logs for cleaner chat experience (unless verbose mode is enabled)
 	var oldStderr *os.File
 	var devNull *os.File
-	
+
 	if !c.config.Verbose {
 		// Redirect verbose llama.cpp logs to prevent noise in chat
 		oldStderr = os.Stderr
 		devNull, _ = os.OpenFile(os.DevNull, os.O_WRONLY, 0)
 		os.Stderr = devNull
 	}
-	
+
 	// Initialize llama backend
 	llama.BackendInit()
-	
+
 	// Restore stderr for our application logs
 	if !c.config.Verbose {
 		devNull.Close()
 		os.Stderr = oldStderr
 	}
-	
+
 	// Set up model parameters
 	modelParams := llama.ModelParams{
 		NumGpuLayers: 0, // TODO: Add GPU support detection
 		UseMmap:      true,
 		VocabOnly:    false,
 	}
-	
+
 	// Load model (redirect stderr to suppress verbose output)
 	if !c.config.Verbose {
 		oldStderr = os.Stderr
 		devNull, _ = os.OpenFile(os.DevNull, os.O_WRONLY, 0)
 		os.Stderr = devNull
 	}
-	
+
 	model, err := llama.LoadModelFromFile(c.modelPath, modelParams)
-	
+
 	// Restore stderr
 	if !c.config.Verbose {
 		devNull.Close()
 		os.Stderr = oldStderr
 	}
-	
+
 	if err != nil {
 		return fmt.Errorf("failed to load model: %w", err)
 	}
 	c.model = model
-	
+
 	// Create context with configuration
 	contextSize := 4096
 	if c.config.MaxTokens > 0 {
 		contextSize = c.config.MaxTokens
 	}
-	
+
 	contextParams := llama.NewContextParams(
 		contextSize, // numCtx
-		512,         // batchSize  
+		512,         // batchSize
 		1,           // numSeqMax
 		4,           // threads
 		false,       // flashAttention
 		"",          // kvCacheType
 	)
-	
+
 	// Suppress context creation logs
 	if !c.config.Verbose {
 		oldStderr = os.Stderr
 		devNull, _ = os.OpenFile(os.DevNull, os.O_WRONLY, 0)
 		os.Stderr = devNull
 	}
-	
+
 	context, err := llama.NewContextWithModel(model, contextParams)
-	
+
 	// Restore stderr
 	if !c.config.Verbose {
 		devNull.Close()
 		os.Stderr = oldStderr
 	}
-	
+
 	if err != nil {
 		llama.FreeModel(model)
 		return fmt.Errorf("failed to create context: %w", err)
 	}
 	c.context = context
-	
+
 	c.initialized = true
 	// Model loaded successfully - suppress verbose logs for cleaner chat experience
-	
+
 	// Auto-detect conversation limits if enabled
 	if c.conversationManager.config.AutoDetectLimits {
 		if err := c.AutoDetectConversationLimits(); err != nil {
@@ -164,7 +164,7 @@ func (c *Client) Initialize() error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -189,40 +189,40 @@ func (c *Client) safeInference(messages []Message, callback StreamCallback) (*Re
 			}
 		}
 	}()
-	
+
 	if !c.initialized {
 		if err := c.Initialize(); err != nil {
 			wrappedErr := fmt.Errorf("%w: %v", ErrModelNotLoaded, err)
 			return &Response{Error: wrappedErr}, wrappedErr
 		}
 	}
-	
+
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	start := time.Now()
-	
+
 	// Truncate messages to prevent batch size crashes
 	truncatedMessages := c.conversationManager.TruncateMessages(messages)
-	
+
 	// Check if truncation occurred due to batch size limits
 	if len(truncatedMessages) < len(messages) {
 		estimatedTokens := c.conversationManager.EstimateTokens(messages)
 		if estimatedTokens > c.config.ContextSize {
 			if c.config.Verbose {
-				log.Printf("Context overflow detected: %d tokens > %d limit, truncated to %d messages", 
+				log.Printf("Context overflow detected: %d tokens > %d limit, truncated to %d messages",
 					estimatedTokens, c.config.ContextSize, len(truncatedMessages))
 			}
 		}
 	}
-	
+
 	// Build prompt from truncated messages
 	prompt := c.buildPrompt(truncatedMessages)
-	
+
 	// Perform inference based on whether streaming is requested
 	var content string
 	var err error
-	
+
 	if callback != nil {
 		// Streaming inference
 		content, err = c.performStreamingInference(prompt, callback)
@@ -230,14 +230,14 @@ func (c *Client) safeInference(messages []Message, callback StreamCallback) (*Re
 		// Non-streaming inference
 		content, err = c.performInference(prompt)
 	}
-	
+
 	if err != nil {
 		wrappedErr := fmt.Errorf("%w: %v", ErrInferenceFailed, err)
 		return &Response{Error: wrappedErr}, wrappedErr
 	}
-	
+
 	duration := time.Since(start)
-	
+
 	response := &Response{
 		Content:      content,
 		Tokens:       c.estimateTokens(content),
@@ -246,7 +246,7 @@ func (c *Client) safeInference(messages []Message, callback StreamCallback) (*Re
 		Timestamp:    time.Now(),
 		FinishReason: "stop",
 	}
-	
+
 	// Add truncation info to metadata if messages were truncated
 	if len(truncatedMessages) < len(messages) {
 		if response.Metadata == nil {
@@ -257,7 +257,7 @@ func (c *Client) safeInference(messages []Message, callback StreamCallback) (*Re
 		response.Metadata["truncated_message_count"] = fmt.Sprintf("%d", len(truncatedMessages))
 		response.Metadata["truncation_reason"] = "batch_size_limit"
 	}
-	
+
 	return response, nil
 }
 
@@ -265,7 +265,7 @@ func (c *Client) safeInference(messages []Message, callback StreamCallback) (*Re
 func (c *Client) IsHealthy() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	return c.initialized && c.model != nil && c.context != nil
 }
 
@@ -273,19 +273,19 @@ func (c *Client) IsHealthy() bool {
 func (c *Client) Close() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	if c.cancel != nil {
 		c.cancel()
 	}
-	
+
 	if c.model != nil {
 		llama.FreeModel(c.model)
 		c.model = nil
 	}
-	
+
 	c.context = nil
 	c.initialized = false
-	
+
 	return nil
 }
 
@@ -296,25 +296,25 @@ func (c *Client) performInference(prompt string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("tokenization failed: %w", err)
 	}
-	
+
 	// Create batch for processing
 	batch, err := llama.NewBatch(len(tokens), 1, 0)
 	if err != nil {
 		return "", fmt.Errorf("batch creation failed: %w", err)
 	}
 	defer batch.Free()
-	
+
 	// Add tokens to batch
 	for i, token := range tokens {
 		batch.Add(token, nil, i, i == len(tokens)-1, 0) // Only get logits for last token
 	}
-	
+
 	// Process the batch
 	err = c.context.Decode(batch)
 	if err != nil {
 		return "", fmt.Errorf("context decode failed: %w", err)
 	}
-	
+
 	// Set up sampling parameters
 	samplingParams := llama.SamplingParams{
 		TopK:           40,
@@ -328,45 +328,45 @@ func (c *Client) performInference(prompt string) (string, error) {
 		PenalizeNl:     true,
 		Seed:           0,
 	}
-	
+
 	// Create sampling context
 	sampler, err := c.createSamplingContext(samplingParams)
 	if err != nil {
 		return "", fmt.Errorf("sampling context creation failed: %w", err)
 	}
-	
+
 	var response strings.Builder
-	maxTokens := 1024  // Increased default for longer responses
+	maxTokens := 1024 // Increased default for longer responses
 	if c.config.MaxTokens > 0 {
 		maxTokens = c.config.MaxTokens
 	}
-	
+
 	// Generate tokens iteratively
 	for i := 0; i < maxTokens; i++ {
 		// Sample next token
 		token := sampler.Sample(c.context, batch.NumTokens()-1)
-		
+
 		// Check for end of generation
 		if c.model.TokenIsEog(token) {
 			break
 		}
-		
+
 		// Convert token to text
 		piece := c.model.TokenToPiece(token)
 		response.WriteString(piece)
-		
+
 		// Check for stop sequences to prevent self-conversation
 		if c.sanitizer.ShouldStop(response.String()) {
 			break
 		}
-		
+
 		// Accept the token for grammar/repetition tracking
 		sampler.Accept(token, true)
-		
+
 		// Prepare for next iteration - add token to batch
 		batch.Clear()
 		batch.Add(token, nil, len(tokens)+i, true, 0)
-		
+
 		// Decode for next iteration
 		err = c.context.Decode(batch)
 		if err != nil {
@@ -374,7 +374,7 @@ func (c *Client) performInference(prompt string) (string, error) {
 			break
 		}
 	}
-	
+
 	return c.sanitizer.CleanResponse(response.String()), nil
 }
 
@@ -385,25 +385,25 @@ func (c *Client) performStreamingInference(prompt string, callback StreamCallbac
 	if err != nil {
 		return "", fmt.Errorf("tokenization failed: %w", err)
 	}
-	
+
 	// Create batch for processing
 	batch, err := llama.NewBatch(len(tokens), 1, 0)
 	if err != nil {
 		return "", fmt.Errorf("batch creation failed: %w", err)
 	}
 	defer batch.Free()
-	
+
 	// Add tokens to batch
 	for i, token := range tokens {
 		batch.Add(token, nil, i, i == len(tokens)-1, 0) // Only get logits for last token
 	}
-	
+
 	// Process the batch
 	err = c.context.Decode(batch)
 	if err != nil {
 		return "", fmt.Errorf("context decode failed: %w", err)
 	}
-	
+
 	// Set up sampling parameters
 	samplingParams := llama.SamplingParams{
 		TopK:           40,
@@ -417,38 +417,38 @@ func (c *Client) performStreamingInference(prompt string, callback StreamCallbac
 		PenalizeNl:     true,
 		Seed:           0,
 	}
-	
+
 	// Create sampling context
 	sampler, err := c.createSamplingContext(samplingParams)
 	if err != nil {
 		return "", fmt.Errorf("sampling context creation failed: %w", err)
 	}
-	
+
 	var response strings.Builder
-	maxTokens := 1024  // Increased default for longer responses
+	maxTokens := 1024 // Increased default for longer responses
 	if c.config.MaxTokens > 0 {
 		maxTokens = c.config.MaxTokens
 	}
-	
+
 	// Generate tokens iteratively with streaming
 	for i := 0; i < maxTokens; i++ {
 		// Sample next token
 		token := sampler.Sample(c.context, batch.NumTokens()-1)
-		
+
 		// Check for end of generation
 		if c.model.TokenIsEog(token) {
 			break
 		}
-		
+
 		// Convert token to text
 		piece := c.model.TokenToPiece(token)
 		response.WriteString(piece)
-		
+
 		// Check for stop sequences to prevent self-conversation
 		if c.sanitizer.ShouldStop(response.String()) {
 			break
 		}
-		
+
 		// Clean and call streaming callback
 		if callback != nil {
 			cleanedPiece := c.sanitizer.CleanStreamingToken(piece)
@@ -456,14 +456,14 @@ func (c *Client) performStreamingInference(prompt string, callback StreamCallbac
 				callback(cleanedPiece)
 			}
 		}
-		
+
 		// Accept the token for grammar/repetition tracking
 		sampler.Accept(token, true)
-		
+
 		// Prepare for next iteration - add token to batch
 		batch.Clear()
 		batch.Add(token, nil, len(tokens)+i, true, 0)
-		
+
 		// Decode for next iteration
 		err = c.context.Decode(batch)
 		if err != nil {
@@ -471,7 +471,7 @@ func (c *Client) performStreamingInference(prompt string, callback StreamCallbac
 			break
 		}
 	}
-	
+
 	return c.sanitizer.CleanResponse(response.String()), nil
 }
 
@@ -481,13 +481,13 @@ func (c *Client) createSamplingContext(samplingParams llama.SamplingParams) (*ll
 		oldStderr := os.Stderr
 		devNull, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
 		os.Stderr = devNull
-		
+
 		sampler, err := llama.NewSamplingContext(c.model, samplingParams)
-		
+
 		// Restore stderr
 		devNull.Close()
 		os.Stderr = oldStderr
-		
+
 		return sampler, err
 	} else {
 		return llama.NewSamplingContext(c.model, samplingParams)
@@ -497,7 +497,7 @@ func (c *Client) createSamplingContext(samplingParams llama.SamplingParams) (*ll
 // buildPrompt converts chat messages to a prompt string using a simple format
 func (c *Client) buildPrompt(messages []Message) string {
 	var prompt strings.Builder
-	
+
 	for _, msg := range messages {
 		switch msg.Role {
 		case "system":
@@ -508,10 +508,10 @@ func (c *Client) buildPrompt(messages []Message) string {
 			prompt.WriteString(fmt.Sprintf("Assistant: %s\n\n", msg.Content))
 		}
 	}
-	
+
 	// Add the assistant prompt to start generation
 	prompt.WriteString("Assistant: ")
-	
+
 	return prompt.String()
 }
 
@@ -536,20 +536,20 @@ func (c *Client) GetModelInfo() (*ModelInfo, error) {
 	if !c.initialized {
 		return nil, ErrModelNotLoaded
 	}
-	
+
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	if c.model == nil {
 		return nil, ErrModelNotLoaded
 	}
-	
+
 	// Get context size from configuration (as set during initialization)
 	contextSize := c.config.ContextSize
 	if contextSize == 0 {
 		contextSize = 4096 // Default context size
 	}
-	
+
 	// Estimate batch size based on context size and configuration
 	// Most models use batch size that's a fraction of context size
 	batchSize := contextSize / 8 // Conservative estimate
@@ -559,7 +559,7 @@ func (c *Client) GetModelInfo() (*ModelInfo, error) {
 	if batchSize > 2048 {
 		batchSize = 2048 // Maximum typical batch size
 	}
-	
+
 	return &ModelInfo{
 		VocabSize:   -1, // Not available without proper API
 		ContextSize: contextSize,
@@ -574,27 +574,27 @@ func (c *Client) AutoDetectConversationLimits() error {
 	if err != nil {
 		return err
 	}
-	
+
 	config := c.conversationManager.config
-	
+
 	// Auto-detect batch size if not set
 	if config.BatchSize == 0 || config.AutoDetectLimits {
 		config.BatchSize = modelInfo.BatchSize
 	}
-	
+
 	// Auto-detect max tokens if not set (80% of batch size)
 	if config.MaxTokens == 0 || config.AutoDetectLimits {
 		config.MaxTokens = int(float64(modelInfo.BatchSize) * 0.8)
 	}
-	
+
 	// Update the conversation manager
 	c.conversationManager.SetConfig(config)
-	
+
 	if c.config.Verbose {
-		log.Printf("Auto-detected conversation limits: MaxTokens=%d, BatchSize=%d", 
+		log.Printf("Auto-detected conversation limits: MaxTokens=%d, BatchSize=%d",
 			config.MaxTokens, config.BatchSize)
 	}
-	
+
 	return nil
 }
 
@@ -602,7 +602,7 @@ func (c *Client) AutoDetectConversationLimits() error {
 func (c *Client) UpdateConfig(config Config) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	c.config = config
 	// Note: Changing config requires reinitialization for some parameters
 }
@@ -611,7 +611,7 @@ func (c *Client) UpdateConfig(config Config) {
 func (c *Client) GetConversationManager() *ConversationManager {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	return c.conversationManager
 }
 
@@ -619,7 +619,7 @@ func (c *Client) GetConversationManager() *ConversationManager {
 func (c *Client) SetConversationConfig(config ConversationConfig) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	c.conversationManager.SetConfig(config)
 }
 
@@ -632,7 +632,7 @@ func (c *Client) SetConversationLimits(config ConversationConfig) {
 func (c *Client) GenerateEmbedding(text string, embeddingModel string) (*EmbeddingResponse, error) {
 	// TODO: Implement offline embedding generation using llama.cpp
 	// For now, return an error indicating this feature is not yet implemented
-	return NewEmbeddingResponse(nil).WithError(fmt.Errorf("embedding generation not yet implemented for offline mode")), 
+	return NewEmbeddingResponse(nil).WithError(fmt.Errorf("embedding generation not yet implemented for offline mode")),
 		fmt.Errorf("embedding generation not yet implemented for offline mode")
 }
 
@@ -640,10 +640,10 @@ func (c *Client) GenerateEmbedding(text string, embeddingModel string) (*Embeddi
 func (c *Client) GenerateEmbeddings(texts []string, embeddingModel string) ([]*EmbeddingResponse, error) {
 	// TODO: Implement offline batch embedding generation
 	responses := make([]*EmbeddingResponse, len(texts))
-	
+
 	for i := range texts {
 		responses[i] = NewEmbeddingResponse(nil).WithError(fmt.Errorf("embedding generation not yet implemented for offline mode"))
 	}
-	
+
 	return responses, fmt.Errorf("embedding generation not yet implemented for offline mode")
 }

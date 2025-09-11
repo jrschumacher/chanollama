@@ -13,13 +13,13 @@ import (
 
 // TestMetadata represents the metadata extracted from each example
 type TestMetadata struct {
-	Name            string
-	Description     string
-	Goal            string
-	ExpectedOutput  string
-	Timeout         time.Duration
-	FilePath        string
-	RequiresModel   bool
+	Name           string
+	Description    string
+	Goal           string
+	ExpectedOutput string
+	Timeout        time.Duration
+	FilePath       string
+	RequiresModel  bool
 }
 
 // TestResult represents the result of running an example
@@ -70,10 +70,10 @@ func main() {
 
 	for i, test := range tests {
 		fmt.Printf("[%d/%d] Running %s...\n", i+1, len(tests), test.Name)
-		
+
 		result := runTest(test)
 		results = append(results, result)
-		
+
 		if result.Success {
 			fmt.Printf("✅ %s - %s (%.2fs)\n", test.Name, result.FunctionalGoal, result.Duration.Seconds())
 			passed++
@@ -106,7 +106,7 @@ func main() {
 // findExampleFiles finds all main.go files in example directories
 func findExampleFiles() ([]string, error) {
 	var files []string
-	
+
 	entries, err := os.ReadDir(".")
 	if err != nil {
 		return nil, err
@@ -140,23 +140,23 @@ func parseMetadata(filePath string) (TestMetadata, error) {
 
 	scanner := bufio.NewScanner(file)
 	inMetadata := false
-	
+
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		if strings.Contains(line, "TEST_METADATA:") {
 			inMetadata = true
 			continue
 		}
-		
+
 		if inMetadata && !strings.HasPrefix(line, "//") {
 			break
 		}
-		
+
 		if inMetadata && strings.HasPrefix(line, "//") {
 			line = strings.TrimPrefix(line, "//")
 			line = strings.TrimSpace(line)
-			
+
 			if strings.HasPrefix(line, "name:") {
 				metadata.Name = strings.TrimSpace(strings.TrimPrefix(line, "name:"))
 			} else if strings.HasPrefix(line, "description:") {
@@ -204,10 +204,10 @@ func runTest(metadata TestMetadata) TestResult {
 
 	// Run the example with timeout
 	start := time.Now()
-	
+
 	cmd := exec.Command("go", "run", metadata.FilePath)
 	cmd.Dir = "."
-	
+
 	// Capture output
 	output, err := runWithTimeout(cmd, metadata.Timeout)
 	result.Duration = time.Since(start)

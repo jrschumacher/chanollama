@@ -35,7 +35,7 @@ func main() {
 
 	codingMessages := []chanollama.Message{
 		{
-			Role: "system", 
+			Role: "system",
 			Content: `You are a helpful coding assistant specialized in Go programming. 
 			Provide clear, concise answers with code examples. Focus on best practices and idiomatic Go code.`,
 		},
@@ -49,7 +49,7 @@ func main() {
 		fmt.Printf("💡 Answer: %s\n", response.Content)
 	}
 
-	// Example 2: Documentation Expert  
+	// Example 2: Documentation Expert
 	fmt.Println("\n📚 Documentation Expert:")
 	fmt.Println("Question: What is machine learning?")
 

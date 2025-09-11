@@ -26,45 +26,45 @@ func NewDetailedFormatter(title string) *DetailedFormatter {
 // FormatSingleResult formats a single evaluation result with detailed information
 func (f *DetailedFormatter) FormatSingleResult(result EvalResult) string {
 	var output strings.Builder
-	
+
 	output.WriteString(fmt.Sprintf("🔍 Query: %s\n", result.Query))
 	if result.SelectedAgent != "" {
 		output.WriteString(fmt.Sprintf("🤖 Agent: %s\n", result.SelectedAgent))
 	}
-	output.WriteString(fmt.Sprintf("📏 Length: %d chars, %d words\n", 
+	output.WriteString(fmt.Sprintf("📏 Length: %d chars, %d words\n",
 		result.Metrics.ResponseLength, result.Metrics.WordCount))
 	output.WriteString(fmt.Sprintf("⏱️  Time: %v\n", result.ResponseTime))
 	output.WriteString(fmt.Sprintf("📊 Quality Score: %.2f/10\n", result.QualityScore))
 	output.WriteString(fmt.Sprintf("   Helpfulness: %.1f | Completeness: %.1f | Actionable: %.1f\n",
 		result.Metrics.HelpfulnessScore, result.Metrics.CompletenessScore, result.Metrics.ActionabilityScore))
-	
+
 	return output.String()
 }
 
 // FormatSummary formats evaluation summary with comprehensive statistics
 func (f *DetailedFormatter) FormatSummary(summary EvalSummary) string {
 	var output strings.Builder
-	
+
 	title := f.Title
 	if title == "" {
 		title = "LLM Evaluation Summary"
 	}
-	
+
 	output.WriteString(fmt.Sprintf("\n📊 %s\n", title))
 	output.WriteString(strings.Repeat("═", len(title)+4) + "\n")
-	output.WriteString(fmt.Sprintf("Tests: %d total, %d passed, %d failed\n", 
+	output.WriteString(fmt.Sprintf("Tests: %d total, %d passed, %d failed\n",
 		summary.TotalTests, summary.PassedTests, summary.FailedTests))
 	output.WriteString(fmt.Sprintf("Average Quality Score: %.2f/10\n", summary.AverageScore))
 	output.WriteString(fmt.Sprintf("Average Response Length: %.0f characters\n", summary.AverageLength))
 	output.WriteString(fmt.Sprintf("Average Response Time: %v\n", summary.AverageTime))
-	
+
 	if summary.AgentAccuracy > 0 {
 		output.WriteString(fmt.Sprintf("Agent Routing Accuracy: %.1f%%\n", summary.AgentAccuracy))
 	}
-	
+
 	passRate := float64(summary.PassedTests) / float64(summary.TotalTests) * 100
 	output.WriteString(fmt.Sprintf("Pass Rate: %.1f%%\n", passRate))
-	
+
 	// Quality assessment
 	output.WriteString("\n🎯 Quality Assessment:\n")
 	switch {
@@ -77,47 +77,47 @@ func (f *DetailedFormatter) FormatSummary(summary EvalSummary) string {
 	default:
 		output.WriteString("❌ Poor - Major issues require attention\n")
 	}
-	
+
 	return output.String()
 }
 
 // FormatProgress formats progress during batch evaluation
 func (f *DetailedFormatter) FormatProgress(results []EvalResult) string {
 	var output strings.Builder
-	
+
 	for i, result := range results {
 		status := "✅"
 		if result.QualityScore < 6.0 {
 			status = "⚠️ "
 		}
-		output.WriteString(fmt.Sprintf("  [%d] %s %.1f/10 - %s\n", i+1, status, result.QualityScore, 
+		output.WriteString(fmt.Sprintf("  [%d] %s %.1f/10 - %s\n", i+1, status, result.QualityScore,
 			truncateString(result.Query, 60)))
 	}
-	
+
 	return output.String()
 }
 
 // FormatDetailedResults formats detailed test results for comprehensive output
 func (f *DetailedFormatter) FormatDetailedResults(results []EvalResult) string {
 	var output strings.Builder
-	
+
 	output.WriteString("\n📋 Detailed Test Results\n")
 	output.WriteString(strings.Repeat("═", 25) + "\n\n")
-	
+
 	for i, result := range results {
 		output.WriteString(fmt.Sprintf("[%d] \n", i+1))
 		output.WriteString(fmt.Sprintf("    Query: %s\n", result.Query))
 		if result.SelectedAgent != "" {
 			output.WriteString(fmt.Sprintf("    Agent: %s\n", result.SelectedAgent))
 		}
-		output.WriteString(fmt.Sprintf("    Score: %.1f/10 | Length: %d chars | Time: %v\n", 
+		output.WriteString(fmt.Sprintf("    Score: %.1f/10 | Length: %d chars | Time: %v\n",
 			result.QualityScore, result.Metrics.ResponseLength, result.ResponseTime))
 		output.WriteString(fmt.Sprintf("    Quality: Help %.1f | Complete %.1f | Actionable %.1f\n",
 			result.Metrics.HelpfulnessScore, result.Metrics.CompletenessScore, result.Metrics.ActionabilityScore))
 		output.WriteString(fmt.Sprintf("    Content: %d code examples, %d commands, %d links\n\n",
 			result.Metrics.CodeExampleCount, result.Metrics.CommandCount, result.Metrics.LinkCount))
 	}
-	
+
 	return output.String()
 }
 
@@ -135,7 +135,7 @@ func (f *SummaryFormatter) FormatSingleResult(result EvalResult) string {
 	if result.SelectedAgent != "" {
 		agent = fmt.Sprintf(" (Agent: %s)", result.SelectedAgent)
 	}
-	return fmt.Sprintf("Score: %.1f/10 | Length: %d chars | Time: %v%s\n", 
+	return fmt.Sprintf("Score: %.1f/10 | Length: %d chars | Time: %v%s\n",
 		result.QualityScore, result.Metrics.ResponseLength, result.ResponseTime, agent)
 }
 
@@ -151,14 +151,14 @@ func (f *SummaryFormatter) FormatProgress(results []EvalResult) string {
 	if len(results) == 0 {
 		return ""
 	}
-	
+
 	total := len(results)
 	var totalScore float64
 	for _, result := range results {
 		totalScore += result.QualityScore
 	}
 	avgScore := totalScore / float64(total)
-	
+
 	return fmt.Sprintf("Progress: %d tests completed | Avg Score: %.1f/10\n", total, avgScore)
 }
 

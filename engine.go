@@ -541,7 +541,7 @@ func (e *AdvancedEngine) handleInference(req EngineRequest) EngineResponse {
 		Data:      response.Content,
 		Metadata: map[string]interface{}{
 			"tokens_generated": tokenCount,
-			"model":           e.client.config.Model,
+			"model":            e.client.config.Model,
 		},
 	}
 }
@@ -765,11 +765,11 @@ func (e *AdvancedEngine) Chat(messages []Message) (*Response, error) {
 	responseChan := make(chan EngineResponse, 1)
 
 	request := EngineRequest{
-		ID:      requestID,
-		Type:    OpInference,
-		Payload: InferencePayload{Messages: messages},
+		ID:       requestID,
+		Type:     OpInference,
+		Payload:  InferencePayload{Messages: messages},
 		Response: responseChan,
-		Context: context.Background(),
+		Context:  context.Background(),
 	}
 
 	err := e.SubmitRequest(request)
@@ -806,17 +806,17 @@ func (e *AdvancedEngine) Chat(messages []Message) (*Response, error) {
 	}
 }
 
-// ChatStream provides a simple streaming chat interface  
+// ChatStream provides a simple streaming chat interface
 func (e *AdvancedEngine) ChatStream(messages []Message, callback StreamCallback) *Response {
 	requestID := generateRequestID()
 	responseChan := make(chan EngineResponse, 1)
 
 	request := EngineRequest{
-		ID:      requestID,
-		Type:    OpStream,
-		Payload: StreamingPayload{Messages: messages},
+		ID:       requestID,
+		Type:     OpStream,
+		Payload:  StreamingPayload{Messages: messages},
 		Response: responseChan,
-		Context: context.Background(),
+		Context:  context.Background(),
 	}
 
 	err := e.SubmitRequest(request)

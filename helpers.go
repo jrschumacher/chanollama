@@ -2,7 +2,7 @@ package chanollama
 
 import "fmt"
 
-// NewAgentAwareEngine creates an agent-aware engine from a config 
+// NewAgentAwareEngine creates an agent-aware engine from a config
 func NewAgentAwareEngine(config Config) (*AgentEngine, error) {
 	// Create base engine
 	baseEngine, err := NewEngine(config)

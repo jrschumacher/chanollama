@@ -20,8 +20,8 @@ type AgentEvaluator struct {
 func NewAgentEvaluator(engine Engine) *AgentEvaluator {
 	return &AgentEvaluator{
 		engine:            engine,
-		agents:           make(map[string]*Agent),
-		defaultAgent:     "general",
+		agents:            make(map[string]*Agent),
+		defaultAgent:      "general",
 		evaluationTimeout: 10 * time.Second,
 		disableLLMEval:    false,
 	}
@@ -55,28 +55,28 @@ func (ae *AgentEvaluator) loadAgentsFromFiles(dirPath string) error {
 func (ae *AgentEvaluator) loadCoreAgents() error {
 	agents := map[string]AgentMetadata{
 		"policy": {
-			Name:        "Policy Agent",
-			Description: "Security policy specialist expert in ABAC design and implementation",
+			Name:         "Policy Agent",
+			Description:  "Security policy specialist expert in ABAC design and implementation",
 			Capabilities: []string{"policy_design", "attributes", "access_control", "abac"},
-			Tags:        []string{"policy", "security", "access_control"},
+			Tags:         []string{"policy", "security", "access_control"},
 		},
 		"development": {
-			Name:        "Development Agent",
-			Description: "Multi-language SDK specialist for security platform integration",
+			Name:         "Development Agent",
+			Description:  "Multi-language SDK specialist for security platform integration",
 			Capabilities: []string{"sdk_integration", "api_usage", "code_examples", "troubleshooting"},
-			Tags:        []string{"development", "sdk", "integration", "api"},
+			Tags:         []string{"development", "sdk", "integration", "api"},
 		},
 		"deployment": {
-			Name:        "Deployment Agent",
-			Description: "Installation and configuration specialist for security platforms",
+			Name:         "Deployment Agent",
+			Description:  "Installation and configuration specialist for security platforms",
 			Capabilities: []string{"installation", "configuration", "docker", "kubernetes", "troubleshooting"},
-			Tags:        []string{"deployment", "installation", "configuration", "devops"},
+			Tags:         []string{"deployment", "installation", "configuration", "devops"},
 		},
 		"general": {
-			Name:        "General Agent",
-			Description: "Security platform concepts and architecture specialist",
+			Name:         "General Agent",
+			Description:  "Security platform concepts and architecture specialist",
 			Capabilities: []string{"concepts", "architecture", "explanations", "guidance"},
-			Tags:        []string{"general", "concepts", "education", "overview"},
+			Tags:         []string{"general", "concepts", "education", "overview"},
 		},
 	}
 
@@ -176,12 +176,12 @@ Agent:`
 func (ae *AgentEvaluator) parseAgentToken(response string) string {
 	// Clean up the response
 	token := strings.TrimSpace(strings.ToLower(response))
-	
+
 	// Remove common prefixes/suffixes
 	token = strings.TrimPrefix(token, "response:")
 	token = strings.TrimPrefix(token, "agent:")
 	token = strings.TrimSpace(token)
-	
+
 	// Extract just the token if it's in a sentence
 	validTokens := []string{"policy", "development", "deployment", "general"}
 	for _, validToken := range validTokens {
@@ -189,14 +189,14 @@ func (ae *AgentEvaluator) parseAgentToken(response string) string {
 			return validToken
 		}
 	}
-	
+
 	return ""
 }
 
 // keywordBasedEvaluation provides robust evaluation using keyword matching
 func (ae *AgentEvaluator) keywordBasedEvaluation(query string) string {
 	query = strings.ToLower(query)
-	
+
 	// Score-based approach for better accuracy
 	scores := map[string]int{
 		"policy":      0,
@@ -204,71 +204,71 @@ func (ae *AgentEvaluator) keywordBasedEvaluation(query string) string {
 		"deployment":  0,
 		"general":     0,
 	}
-	
+
 	// Policy keywords with weights
 	policyKeywords := map[string]int{
 		"policy": 5, "attribute": 4, "abac": 5, "access": 3, "permission": 4,
 		"namespace": 4, "subject": 3, "resource": 3, "mapping": 3, "grant": 3,
 		"authorization": 4, "control": 2, "security": 2, "role": 2,
 	}
-	
+
 	// Development keywords with weights
 	devKeywords := map[string]int{
 		"sdk": 5, "api": 4, "code": 4, "java": 4, "javascript": 4, "go": 3,
 		"integration": 4, "encrypt": 4, "decrypt": 4, "develop": 3, "client": 3,
 		"library": 3, "example": 2, "implementation": 3, "typescript": 4,
 	}
-	
+
 	// Deployment keywords with weights
 	deployKeywords := map[string]int{
 		"install": 5, "deploy": 5, "docker": 5, "kubernetes": 5, "k8s": 5,
 		"config": 4, "setup": 4, "certificate": 4, "network": 3, "server": 3,
 		"environment": 3, "production": 3, "staging": 2, "helm": 4,
 	}
-	
+
 	// General keywords with weights (concepts, architecture)
 	generalKeywords := map[string]int{
 		"what": 2, "how": 2, "why": 2, "explain": 3, "understand": 3,
 		"concept": 4, "architecture": 4, "overview": 3, "introduction": 3,
 		"encryption": 3, "security": 3, "platform": 3, "data protection": 2,
 	}
-	
+
 	// Score each category
 	for keyword, weight := range policyKeywords {
 		if strings.Contains(query, keyword) {
 			scores["policy"] += weight
 		}
 	}
-	
+
 	for keyword, weight := range devKeywords {
 		if strings.Contains(query, keyword) {
 			scores["development"] += weight
 		}
 	}
-	
+
 	for keyword, weight := range deployKeywords {
 		if strings.Contains(query, keyword) {
 			scores["deployment"] += weight
 		}
 	}
-	
+
 	for keyword, weight := range generalKeywords {
 		if strings.Contains(query, keyword) {
 			scores["general"] += weight
 		}
 	}
-	
+
 	// Find the highest scoring agent
 	maxScore := 0
 	selectedAgent := "general" // default
-	
+
 	for agent, score := range scores {
 		if score > maxScore {
 			maxScore = score
 			selectedAgent = agent
 		}
 	}
-	
+
 	return selectedAgent
 }
 

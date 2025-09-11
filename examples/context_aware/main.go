@@ -31,7 +31,7 @@ func main() {
 
 	// Create a conversation with history management
 	conversation := chanollama.NewConversation()
-	
+
 	// Set system prompt for the conversation
 	conversation.AddSystemMessage(`You are a helpful programming tutor. Give brief, clear answers.`)
 
@@ -119,7 +119,7 @@ func main() {
 
 	// Demonstrate automatic trimming by adding many messages
 	fmt.Println("\n🔄 Testing automatic message trimming...")
-	
+
 	for i := 0; i < 25; i++ {
 		conversation.AddUserMessage(fmt.Sprintf("Test message %d", i))
 		conversation.AddAssistantMessage(fmt.Sprintf("Response %d", i))
@@ -128,7 +128,7 @@ func main() {
 	fmt.Printf("📊 After adding 50 test messages:\n")
 	fmt.Printf("   Messages kept: %d (should be ≤ %d)\n", len(conversation.Messages), conversation.MaxMessages)
 	fmt.Printf("   System messages preserved: ")
-	
+
 	systemCount := 0
 	for _, msg := range conversation.Messages {
 		if msg.Role == "system" {

@@ -8,10 +8,10 @@ import (
 
 // ContextUsage tracks context window usage
 type ContextUsage struct {
-	UsedTokens    int     `json:"used_tokens"`
-	MaxTokens     int     `json:"max_tokens"`
-	Percentage    float64 `json:"percentage"`
-	NeedsCleanup  bool    `json:"needs_cleanup"`
+	UsedTokens   int     `json:"used_tokens"`
+	MaxTokens    int     `json:"max_tokens"`
+	Percentage   float64 `json:"percentage"`
+	NeedsCleanup bool    `json:"needs_cleanup"`
 }
 
 // CalculateContextUsage computes context usage statistics
@@ -65,7 +65,7 @@ func (as *AutoSummarizer) ShouldSummarize(contextUsage ContextUsage) bool {
 	if !as.enabled || as.engine == nil {
 		return false
 	}
-	
+
 	return contextUsage.Percentage >= as.summaryThreshold
 }
 
@@ -84,22 +84,22 @@ func (as *AutoSummarizer) SummarizeConversation(messages []Message, context stri
 	if len(messages) == 0 {
 		return nil, fmt.Errorf("no messages to summarize")
 	}
-	
+
 	// Filter out system messages and previous summaries
 	relevantMessages := as.filterMessagesForSummary(messages)
 	if len(relevantMessages) == 0 {
 		return nil, fmt.Errorf("no relevant messages to summarize")
 	}
-	
+
 	// Create summarization prompt
 	summaryPrompt := as.buildSummaryPrompt(relevantMessages, context)
-	
+
 	// Generate summary using the chat engine
 	summary, err := as.generateSummary(summaryPrompt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate summary: %w", err)
 	}
-	
+
 	// Create conversation summary
 	conversationSummary := &ConversationSummary{
 		Summary:            summary,
@@ -109,7 +109,7 @@ func (as *AutoSummarizer) SummarizeConversation(messages []Message, context stri
 		Context:            context,
 		TokensSaved:        as.estimateTokensSaved(relevantMessages, summary),
 	}
-	
+
 	return conversationSummary, nil
 }
 
@@ -117,79 +117,79 @@ func (as *AutoSummarizer) SummarizeConversation(messages []Message, context stri
 func (as *AutoSummarizer) ApplySummary(messages []Message, summary *ConversationSummary) []Message {
 	// Keep the system message (first message) if present
 	var newMessages []Message
-	
+
 	if len(messages) > 0 && messages[0].Role == "system" {
 		newMessages = append(newMessages, messages[0])
 	}
-	
+
 	// Add summary as a system message
 	summaryMessage := Message{
 		Role:    "system",
 		Content: fmt.Sprintf("Previous conversation summary: %s", summary.Summary),
 	}
 	newMessages = append(newMessages, summaryMessage)
-	
+
 	// Keep the last few messages for continuity (last 3 exchanges)
 	recentMessages := as.getRecentMessages(messages, 6) // 3 user + 3 assistant
 	newMessages = append(newMessages, recentMessages...)
-	
+
 	return newMessages
 }
 
 // filterMessagesForSummary removes system messages and keeps user/assistant exchanges
 func (as *AutoSummarizer) filterMessagesForSummary(messages []Message) []Message {
 	var filtered []Message
-	
+
 	for _, msg := range messages {
 		// Skip system messages and previous summaries
 		if msg.Role == "system" {
 			continue
 		}
-		
+
 		// Skip messages that look like summaries
 		if strings.Contains(strings.ToLower(msg.Content), "previous conversation summary") {
 			continue
 		}
-		
+
 		filtered = append(filtered, msg)
 	}
-	
+
 	return filtered
 }
 
 // buildSummaryPrompt creates a prompt for generating conversation summary
 func (as *AutoSummarizer) buildSummaryPrompt(messages []Message, context string) string {
 	var prompt strings.Builder
-	
+
 	prompt.WriteString("Please create a concise summary of this conversation. ")
 	prompt.WriteString("Focus on the main topics discussed, key information shared, and important decisions or conclusions. ")
 	prompt.WriteString("Keep the summary under 200 words and maintain the essential context for continuing the conversation.\n\n")
-	
+
 	// Add context if available
 	if context != "" {
 		prompt.WriteString(fmt.Sprintf("Context: %s\n\n", context))
 	}
-	
+
 	prompt.WriteString("Conversation to summarize:\n")
-	
+
 	// Add the conversation messages
 	for i, msg := range messages {
 		speaker := "User"
 		if msg.Role == "assistant" {
 			speaker = "Assistant"
 		}
-		
+
 		// Truncate very long messages
 		content := msg.Content
 		if len(content) > 300 {
 			content = content[:300] + "..."
 		}
-		
+
 		prompt.WriteString(fmt.Sprintf("%d. %s: %s\n", i+1, speaker, content))
 	}
-	
+
 	prompt.WriteString("\nSummary:")
-	
+
 	return prompt.String()
 }
 
@@ -206,20 +206,20 @@ func (as *AutoSummarizer) generateSummary(summaryPrompt string) (string, error) 
 			Content: summaryPrompt,
 		},
 	}
-	
+
 	// Generate summary
 	response, err := as.engine.Chat(messages)
 	if err != nil {
 		return "", err
 	}
-	
+
 	if response.Error != nil {
 		return "", response.Error
 	}
-	
+
 	// Clean up the summary
 	summary := strings.TrimSpace(response.Content)
-	
+
 	// Enforce length limits
 	if len(summary) > as.maxSummaryLength*4 { // Rough token estimation
 		// Truncate if too long
@@ -228,7 +228,7 @@ func (as *AutoSummarizer) generateSummary(summaryPrompt string) (string, error) 
 			summary = strings.Join(words[:as.maxSummaryLength], " ") + "..."
 		}
 	}
-	
+
 	return summary, nil
 }
 
@@ -237,7 +237,7 @@ func (as *AutoSummarizer) getRecentMessages(messages []Message, count int) []Mes
 	if len(messages) <= count {
 		return messages
 	}
-	
+
 	// Return the last 'count' messages
 	return messages[len(messages)-count:]
 }
@@ -249,23 +249,23 @@ func (as *AutoSummarizer) estimateTokensSaved(originalMessages []Message, summar
 	for _, msg := range originalMessages {
 		originalTokens += len(msg.Content) / 4
 	}
-	
+
 	summaryTokens := len(summary) / 4
-	
+
 	saved := originalTokens - summaryTokens
 	if saved < 0 {
 		saved = 0
 	}
-	
+
 	return saved
 }
 
 // SmartConversation combines Conversation with automatic summarization
 type SmartConversation struct {
 	*Conversation
-	summarizer   *AutoSummarizer
-	tokenLimit   int
-	context      string
+	summarizer *AutoSummarizer
+	tokenLimit int
+	context    string
 }
 
 // NewSmartConversation creates a conversation with automatic summarization
@@ -299,19 +299,19 @@ func (sc *SmartConversation) AddAssistantMessage(content string) error {
 func (sc *SmartConversation) checkAndSummarize() error {
 	currentTokens := sc.Conversation.EstimateTokens()
 	contextUsage := CalculateContextUsage(currentTokens, sc.tokenLimit)
-	
+
 	if sc.summarizer.ShouldSummarize(contextUsage) {
 		summary, err := sc.summarizer.SummarizeConversation(sc.Conversation.Messages, sc.context)
 		if err != nil {
 			return fmt.Errorf("auto-summarization failed: %w", err)
 		}
-		
+
 		// Apply the summary
 		sc.Conversation.Messages = sc.summarizer.ApplySummary(sc.Conversation.Messages, summary)
-		
+
 		return nil
 	}
-	
+
 	return nil
 }
 

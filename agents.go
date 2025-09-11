@@ -12,13 +12,13 @@ import (
 type AgentMetadata struct {
 	Name        string `yaml:"agent_name"`
 	Description string `yaml:"description"`
-	
+
 	// Additional metadata
 	FilePath     string    `yaml:"-"` // Path to the agent file
 	LastModified time.Time `yaml:"-"` // When the agent was last modified
 	Version      string    `yaml:"version,omitempty"`
 	Tags         []string  `yaml:"tags,omitempty"`
-	
+
 	// Agent capabilities
 	Capabilities []string `yaml:"capabilities,omitempty"`
 	SubAgents    []string `yaml:"sub_agents,omitempty"`
@@ -37,15 +37,15 @@ const (
 
 // Agent represents a specialized AI agent with specific knowledge and capabilities
 type Agent struct {
-	Metadata      AgentMetadata
-	SystemPrompt  string
-	Type          AgentType
-	
+	Metadata     AgentMetadata
+	SystemPrompt string
+	Type         AgentType
+
 	// Runtime properties
-	IsActive      bool
-	LastUsed      time.Time
-	UsageCount    int64
-	
+	IsActive   bool
+	LastUsed   time.Time
+	UsageCount int64
+
 	// Context management
 	ContextWindow int
 	MaxTokens     int
@@ -55,12 +55,12 @@ type Agent struct {
 func NewAgent(name, description, systemPrompt string) *Agent {
 	return &Agent{
 		Metadata: AgentMetadata{
-			Name:        name,
-			Description: description,
-			Version:     "1.0.0",
-			Tags:        []string{},
+			Name:         name,
+			Description:  description,
+			Version:      "1.0.0",
+			Tags:         []string{},
 			Capabilities: []string{},
-			SubAgents:   []string{},
+			SubAgents:    []string{},
 		},
 		SystemPrompt:  systemPrompt,
 		Type:          AgentTypeGeneral,
@@ -149,17 +149,17 @@ type AgentRegistry interface {
 	// Agent discovery and loading
 	LoadAgents(ctx context.Context) error
 	RefreshAgents(ctx context.Context) error
-	
+
 	// Agent retrieval
 	GetAgent(name string) (*Agent, error)
 	GetAgentByType(agentType AgentType) (*Agent, error)
 	ListAgents() []*Agent
 	ListAgentsByType(agentType AgentType) []*Agent
-	
+
 	// Agent management
 	RegisterAgent(agent *Agent) error
 	UnregisterAgent(name string) error
-	
+
 	// Agent matching
 	FindBestAgent(query string, context map[string]interface{}) (*Agent, error)
 	SuggestAgent(userInput string) (*Agent, error)
@@ -178,7 +178,7 @@ type AgentContext struct {
 	UserQuery           string
 	ConversationHistory []Message
 	SessionMetadata     map[string]interface{}
-	
+
 	// Agent selection context
 	PreviousAgent   *Agent
 	SuggestedAgents []*Agent
@@ -248,13 +248,13 @@ func (r *SimpleAgentRegistry) RefreshAgents(ctx context.Context) error {
 func (r *SimpleAgentRegistry) GetAgent(name string) (*Agent, error) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
-	
+
 	for _, agent := range r.agents {
 		if agent.Metadata.Name == name {
 			return agent, nil
 		}
 	}
-	
+
 	return nil, fmt.Errorf("agent not found: %s", name)
 }
 
@@ -262,13 +262,13 @@ func (r *SimpleAgentRegistry) GetAgent(name string) (*Agent, error) {
 func (r *SimpleAgentRegistry) GetAgentByType(agentType AgentType) (*Agent, error) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
-	
+
 	for _, agent := range r.agents {
 		if agent.Type == agentType {
 			return agent, nil
 		}
 	}
-	
+
 	return nil, fmt.Errorf("no agent found for type: %s", agentType)
 }
 
@@ -276,12 +276,12 @@ func (r *SimpleAgentRegistry) GetAgentByType(agentType AgentType) (*Agent, error
 func (r *SimpleAgentRegistry) ListAgents() []*Agent {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
-	
+
 	agents := make([]*Agent, 0, len(r.agents))
 	for _, agent := range r.agents {
 		agents = append(agents, agent)
 	}
-	
+
 	return agents
 }
 
@@ -289,14 +289,14 @@ func (r *SimpleAgentRegistry) ListAgents() []*Agent {
 func (r *SimpleAgentRegistry) ListAgentsByType(agentType AgentType) []*Agent {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
-	
+
 	agents := []*Agent{}
 	for _, agent := range r.agents {
 		if agent.Type == agentType {
 			agents = append(agents, agent)
 		}
 	}
-	
+
 	return agents
 }
 
@@ -305,17 +305,17 @@ func (r *SimpleAgentRegistry) RegisterAgent(agent *Agent) error {
 	if agent == nil {
 		return fmt.Errorf("agent cannot be nil")
 	}
-	
+
 	if agent.Metadata.Name == "" {
 		return fmt.Errorf("agent name cannot be empty")
 	}
-	
+
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	
+
 	agentID := agent.GetID()
 	r.agents[agentID] = agent
-	
+
 	return nil
 }
 
@@ -323,14 +323,14 @@ func (r *SimpleAgentRegistry) RegisterAgent(agent *Agent) error {
 func (r *SimpleAgentRegistry) UnregisterAgent(name string) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	
+
 	for id, agent := range r.agents {
 		if agent.Metadata.Name == name {
 			delete(r.agents, id)
 			return nil
 		}
 	}
-	
+
 	return fmt.Errorf("agent not found: %s", name)
 }
 
@@ -340,14 +340,14 @@ func (r *SimpleAgentRegistry) FindBestAgent(query string, context map[string]int
 	if len(agents) == 0 {
 		return nil, fmt.Errorf("no agents registered")
 	}
-	
+
 	// Simple strategy: return the first active agent, or first agent if none active
 	for _, agent := range agents {
 		if agent.IsActive {
 			return agent, nil
 		}
 	}
-	
+
 	return agents[0], nil
 }
 
@@ -370,10 +370,10 @@ func (s *SimpleSelectionStrategy) SelectAgent(ctx *AgentContext, availableAgents
 	if len(availableAgents) == 0 {
 		return nil, 0, fmt.Errorf("no agents available")
 	}
-	
+
 	bestAgent := availableAgents[0]
 	bestScore := s.CalculateRelevanceScore(bestAgent, ctx)
-	
+
 	for _, agent := range availableAgents[1:] {
 		score := s.CalculateRelevanceScore(agent, ctx)
 		if score > bestScore {
@@ -381,29 +381,29 @@ func (s *SimpleSelectionStrategy) SelectAgent(ctx *AgentContext, availableAgents
 			bestScore = score
 		}
 	}
-	
+
 	return bestAgent, bestScore, nil
 }
 
 // CalculateRelevanceScore calculates how relevant an agent is to the context
 func (s *SimpleSelectionStrategy) CalculateRelevanceScore(agent *Agent, context *AgentContext) float64 {
 	score := 0.0
-	
+
 	// Base score for active agents
 	if agent.IsActive {
 		score += 0.3
 	}
-	
+
 	// Score based on usage frequency
 	if agent.UsageCount > 0 {
 		score += 0.2
 	}
-	
+
 	// Score based on recent usage
 	if time.Since(agent.LastUsed) < 24*time.Hour {
 		score += 0.1
 	}
-	
+
 	// Score based on agent type preference (simple keyword matching)
 	query := strings.ToLower(context.UserQuery)
 	switch agent.Type {
@@ -422,7 +422,7 @@ func (s *SimpleSelectionStrategy) CalculateRelevanceScore(agent *Agent, context 
 	case AgentTypeGeneral:
 		score += 0.2 // General agents are always somewhat relevant
 	}
-	
+
 	return score
 }
 
@@ -435,24 +435,24 @@ func (s *SimpleSelectionStrategy) ShouldSwitchAgent(currentAgent *Agent, context
 
 // AgentManager orchestrates agent lifecycle and selection
 type AgentManager struct {
-	registry           AgentRegistry
-	loader             AgentLoader
-	selectionStrategy  AgentSelectionStrategy
-	
+	registry          AgentRegistry
+	loader            AgentLoader
+	selectionStrategy AgentSelectionStrategy
+
 	// Configuration
-	agentDirectory     string
-	autoRefresh        bool
-	refreshInterval    time.Duration
-	
+	agentDirectory  string
+	autoRefresh     bool
+	refreshInterval time.Duration
+
 	// Runtime state
-	currentAgent       *Agent
-	sessionContext     *AgentContext
-	agentSwitchCount   int
-	
+	currentAgent     *Agent
+	sessionContext   *AgentContext
+	agentSwitchCount int
+
 	// Event handling
-	eventHandlers      []AgentEventHandler
-	
-	mutex              sync.RWMutex
+	eventHandlers []AgentEventHandler
+
+	mutex sync.RWMutex
 }
 
 // NewAgentManager creates a new agent manager
@@ -511,19 +511,19 @@ func (am *AgentManager) LoadAgents(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to load agents from directory: %w", err)
 		}
-		
+
 		for _, agent := range agents {
 			if err := am.registry.RegisterAgent(agent); err != nil {
 				return fmt.Errorf("failed to register agent %s: %w", agent.Metadata.Name, err)
 			}
-			
+
 			// Notify event handlers
 			for _, handler := range am.eventHandlers {
 				handler.OnAgentLoaded(agent)
 			}
 		}
 	}
-	
+
 	return am.registry.LoadAgents(ctx)
 }
 
@@ -552,23 +552,23 @@ func (am *AgentManager) SelectAgent(context *AgentContext) (*Agent, error) {
 	if len(availableAgents) == 0 {
 		return nil, fmt.Errorf("no agents available")
 	}
-	
+
 	agent, confidence, err := am.selectionStrategy.SelectAgent(context, availableAgents)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Update current agent and context
 	am.mutex.Lock()
 	previousAgent := am.currentAgent
 	am.currentAgent = agent
 	am.sessionContext = context
 	am.mutex.Unlock()
-	
+
 	// Activate the selected agent
 	agent.Activate()
 	agent.Use()
-	
+
 	// Notify event handlers
 	for _, handler := range am.eventHandlers {
 		handler.OnAgentSelected(agent, context)
@@ -577,7 +577,7 @@ func (am *AgentManager) SelectAgent(context *AgentContext) (*Agent, error) {
 			handler.OnAgentSwitched(previousAgent, agent, fmt.Sprintf("Automatic selection (confidence: %.2f)", confidence))
 		}
 	}
-	
+
 	return agent, nil
 }
 
@@ -586,13 +586,13 @@ func (am *AgentManager) ProcessWithAgent(agent *Agent, messages []Message, engin
 	if agent == nil {
 		return nil, fmt.Errorf("agent cannot be nil")
 	}
-	
+
 	// Prepare messages with agent's system prompt
 	agentMessages := []Message{
 		NewSystemMessage(agent.SystemPrompt),
 	}
 	agentMessages = append(agentMessages, messages...)
-	
+
 	// Process with the engine
 	response, err := engine.Chat(agentMessages)
 	if err != nil {
@@ -602,10 +602,10 @@ func (am *AgentManager) ProcessWithAgent(agent *Agent, messages []Message, engin
 		}
 		return nil, err
 	}
-	
+
 	// Update agent usage
 	agent.Use()
-	
+
 	return response, nil
 }
 
@@ -621,31 +621,31 @@ func (am *AgentManager) GetAgent(name string) (*Agent, error) {
 
 // AgentResponse represents a response from an agent with metadata
 type AgentResponse struct {
-	Content         string
+	Content        string
 	Agent          *Agent
 	Confidence     float64
 	ProcessingTime time.Duration
 	TokensUsed     int
-	
+
 	// Agent suggestions
-	SuggestedAgents   []*Agent
-	SuggestSwitch     bool
-	SwitchReason      string
-	
+	SuggestedAgents []*Agent
+	SuggestSwitch   bool
+	SwitchReason    string
+
 	// Context updates
-	UpdatedContext    map[string]interface{}
-	LearningInsights  []string
+	UpdatedContext   map[string]interface{}
+	LearningInsights []string
 }
 
 // AgentSwitchEvent represents when the system switches between agents
 type AgentSwitchEvent struct {
-	Timestamp     time.Time
-	FromAgent     *Agent
-	ToAgent       *Agent
-	Reason        string
-	UserQuery     string
-	Confidence    float64
-	WasAutomatic  bool
+	Timestamp    time.Time
+	FromAgent    *Agent
+	ToAgent      *Agent
+	Reason       string
+	UserQuery    string
+	Confidence   float64
+	WasAutomatic bool
 }
 
 // AgentEvent represents various agent lifecycle events

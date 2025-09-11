@@ -19,12 +19,12 @@ func NewEngine(config Config) (Engine, error) {
 			}
 		}
 	}
-	
+
 	// Use offline mode if configured or model path is provided
 	if config.OfflineMode || config.ModelPath != "" {
 		return NewOfflineEngine(config)
 	}
-	
+
 	// Default to offline client with model path
 	return NewWithConfig(config.ModelPath, config), nil
 }
@@ -35,47 +35,46 @@ func NewOfflineEngine(config Config) (Engine, error) {
 	if modelPath == "" {
 		modelPath = config.Model
 	}
-	
+
 	// Validate model path
 	if err := validateModelPath(modelPath); err != nil {
 		return nil, fmt.Errorf("invalid model path: %w", err)
 	}
-	
+
 	// Create offline client
 	client := NewWithConfig(modelPath, config)
-	
+
 	return client, nil
 }
-
 
 // validateModelPath checks if the model path is valid
 func validateModelPath(modelPath string) error {
 	if modelPath == "" {
 		return fmt.Errorf("model path cannot be empty")
 	}
-	
+
 	// Check if file exists
 	info, err := os.Stat(modelPath)
 	if err != nil {
 		return fmt.Errorf("model file not found: %s", modelPath)
 	}
-	
+
 	// Check if it's a directory
 	if info.IsDir() {
 		return fmt.Errorf("path is a directory, not a file")
 	}
-	
+
 	// Check if it's a supported format or an Ollama blob
 	ext := strings.ToLower(filepath.Ext(modelPath))
 	supportedFormats := []string{".gguf", ".bin", ".ggml"}
-	
+
 	// Check for supported extensions
 	for _, format := range supportedFormats {
 		if ext == format {
 			return nil
 		}
 	}
-	
+
 	// Check if it's an Ollama blob file (no extension but in .ollama/models/blobs/)
 	if ext == "" && strings.Contains(modelPath, ".ollama/models/blobs/") {
 		// Additional validation for Ollama blobs - check file size
@@ -84,29 +83,29 @@ func validateModelPath(modelPath string) error {
 		}
 		return fmt.Errorf("ollama blob file appears to be empty or too small")
 	}
-	
+
 	return fmt.Errorf("unsupported model format: %s (supported: %v, or Ollama blob files)", ext, supportedFormats)
 }
 
 // IsModelFile checks if the given string looks like a model file path
 func IsModelFile(model string) bool {
 	// Reject URLs (HTTP/HTTPS/FTP schemes)
-	if strings.HasPrefix(strings.ToLower(model), "http://") || 
-	   strings.HasPrefix(strings.ToLower(model), "https://") ||
-	   strings.HasPrefix(strings.ToLower(model), "ftp://") {
+	if strings.HasPrefix(strings.ToLower(model), "http://") ||
+		strings.HasPrefix(strings.ToLower(model), "https://") ||
+		strings.HasPrefix(strings.ToLower(model), "ftp://") {
 		return false
 	}
-	
+
 	// Reject model names (format like "model:tag")
 	if strings.Contains(model, ":") && !strings.Contains(model, "/") && !strings.Contains(model, "\\") {
 		return false
 	}
-	
+
 	// Check for file path indicators
 	if strings.Contains(model, "/") || strings.Contains(model, "\\") {
 		return true
 	}
-	
+
 	// Check for model file extensions
 	ext := strings.ToLower(filepath.Ext(model))
 	return ext == ".gguf" || ext == ".bin" || ext == ".ggml"
@@ -115,14 +114,13 @@ func IsModelFile(model string) bool {
 // AutoDetectMode determines the best mode for the given model parameter
 func AutoDetectMode(model string) (bool, string) {
 	// Returns (isOffline, modelPath)
-	
+
 	if IsModelFile(model) {
 		if _, err := os.Stat(model); err == nil {
 			return true, model
 		}
 	}
-	
+
 	// Default to offline mode with model name (user needs to provide model path)
 	return false, ""
 }
-

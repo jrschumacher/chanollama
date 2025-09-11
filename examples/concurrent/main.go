@@ -41,22 +41,22 @@ func main() {
 
 	for i, question := range questions {
 		fmt.Printf("🚀 Starting conversation %d: %s\n", i+1, question)
-		
+
 		messages := []chanollama.Message{
 			{Role: "system", Content: "Give brief answers."},
 			{Role: "user", Content: question},
 		}
-		
+
 		fmt.Printf("💬 Conversation %d: ", i+1)
 		response := client.ChatStream(messages, func(token string) {
 			fmt.Print(token)
 		})
-		
+
 		if response.Error != nil {
 			log.Printf("\n❌ Conversation %d error: %v", i+1, response.Error)
 			continue
 		}
-		
+
 		fmt.Printf("\n✅ Conversation %d completed\n\n", i+1)
 	}
 
@@ -73,22 +73,22 @@ func main() {
 
 	for i, question := range quickQuestions {
 		fmt.Printf("👤 Question %d: %s\n", i+1, question)
-		
+
 		messages := []chanollama.Message{
 			{Role: "system", Content: "Be brief."},
 			{Role: "user", Content: question},
 		}
-		
+
 		fmt.Printf("🤖 Answer: ")
 		response := client.ChatStream(messages, func(token string) {
 			fmt.Print(token)
 		})
-		
+
 		if response.Error != nil {
 			log.Printf("\n❌ Error: %v", response.Error)
 			continue
 		}
-		
+
 		fmt.Println("\n")
 	}
 
@@ -99,16 +99,16 @@ func main() {
 	fmt.Println("==================")
 
 	start := time.Now()
-	
+
 	testMessages := []chanollama.Message{
 		{Role: "user", Content: "Say hello"},
 	}
-	
+
 	fmt.Print("🚀 Test: ")
 	response := client.ChatStream(testMessages, func(token string) {
 		fmt.Print(token)
 	})
-	
+
 	if response.Error != nil {
 		log.Printf("\n❌ Test error: %v", response.Error)
 	} else {
@@ -118,4 +118,3 @@ func main() {
 
 	fmt.Println("\n✅ Sequential streaming examples completed!")
 }
-

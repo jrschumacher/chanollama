@@ -100,21 +100,21 @@ type RAGContext struct {
 
 // VectorStore manages document embeddings and similarity search
 type VectorStore struct {
-	documents     []Document
-	embeddingDim  int
-	mu            sync.RWMutex
-	indexPath     string
-	client        *Client        // Ollama client for embedding generation
-	embeddingModel string        // Model to use for embeddings
+	documents      []Document
+	embeddingDim   int
+	mu             sync.RWMutex
+	indexPath      string
+	client         *Client // Ollama client for embedding generation
+	embeddingModel string  // Model to use for embeddings
 }
 
 // NewVectorStore creates a new vector store
 func NewVectorStore(indexPath string) *VectorStore {
 	return &VectorStore{
-		documents:     make([]Document, 0),
-		embeddingDim:  0,
-		indexPath:     indexPath,
-		client:        nil,
+		documents:      make([]Document, 0),
+		embeddingDim:   0,
+		indexPath:      indexPath,
+		client:         nil,
 		embeddingModel: "mxbai-embed-large", // Default embedding model
 	}
 }
@@ -257,21 +257,21 @@ func (vs *VectorStore) SearchByText(query string, topK int) ([]SimilarityResult,
 	client := vs.client
 	embeddingModel := vs.embeddingModel
 	vs.mu.RUnlock()
-	
+
 	if client == nil {
 		return nil, fmt.Errorf("no embedding client available - vector search requires embeddings to be generated online or query embeddings to be pre-computed")
 	}
-	
+
 	// Generate embedding for query
 	embResp, err := client.GenerateEmbedding(query, embeddingModel)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate query embedding: %w", err)
 	}
-	
+
 	if !embResp.IsSuccess() {
 		return nil, fmt.Errorf("embedding generation failed for query")
 	}
-	
+
 	// Use existing search with generated embedding
 	return vs.Search(embResp.Embedding, topK)
 }
@@ -283,20 +283,20 @@ func (vs *VectorStore) GenerateDocumentEmbedding(content string) ([]float32, err
 	client := vs.client
 	embeddingModel := vs.embeddingModel
 	vs.mu.RUnlock()
-	
+
 	if client == nil {
 		return nil, fmt.Errorf("no embedding client available - embeddings must be generated during indexing phase")
 	}
-	
+
 	embResp, err := client.GenerateEmbedding(content, embeddingModel)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate document embedding: %w", err)
 	}
-	
+
 	if !embResp.IsSuccess() {
 		return nil, fmt.Errorf("embedding generation failed for document")
 	}
-	
+
 	return embResp.Embedding, nil
 }
 
@@ -310,7 +310,7 @@ func (vs *VectorStore) AddDocumentWithEmbedding(doc Document) error {
 		}
 		doc.Embedding = embedding
 	}
-	
+
 	return vs.AddDocument(doc)
 }
 
@@ -699,7 +699,7 @@ func BuildSimpleRAGContext(query string, results []SearchResult, maxTokens int) 
 
 // RAGEngine combines document retrieval with LLM querying
 type RAGEngine struct {
-	engine     Engine
+	engine      Engine
 	vectorStore *VectorStore
 	simpleStore *SimpleRAGStore
 	useVector   bool
@@ -803,7 +803,7 @@ func (re *RAGEngine) Search(query string, topK int) ([]SearchResult, error) {
 		if err != nil {
 			return []SearchResult{}, err
 		}
-		
+
 		// Convert SimilarityResult to SearchResult for compatibility
 		searchResults := make([]SearchResult, len(simResults))
 		for i, simResult := range simResults {
