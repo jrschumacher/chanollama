@@ -479,7 +479,10 @@ func (uv *URLValidator) ValidateURL(url string) error {
 	}
 
 	for _, pattern := range forbiddenPatterns {
-		matched, _ := regexp.MatchString(pattern, strings.ToLower(url))
+		matched, err := regexp.MatchString(pattern, strings.ToLower(url))
+		if err != nil {
+			return fmt.Errorf("invalid regex pattern: %w", err)
+		}
 		if matched {
 			return fmt.Errorf("access to local/private networks is forbidden")
 		}

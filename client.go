@@ -175,7 +175,10 @@ func (c *Client) Chat(messages []Message) (*Response, error) {
 
 // ChatStream performs a streaming chat request
 func (c *Client) ChatStream(messages []Message, callback StreamCallback) *Response {
-	response, _ := c.safeInference(messages, callback)
+	response, err := c.safeInference(messages, callback)
+	if err != nil {
+		return &Response{Error: err}
+	}
 	return response
 }
 

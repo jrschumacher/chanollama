@@ -148,8 +148,8 @@ func TestCleanResponse(t *testing.T) {
 	}
 
 	// Test complex cleaning
-	complex := "<|im_start|>user\nHello world<|eot_id|>\nassistant\nGood response\n\nUser"
-	cleaned = sanitizer.CleanResponse(complex)
+	complexInput := "<|im_start|>user\nHello world<|eot_id|>\nassistant\nGood response\n\nUser"
+	cleaned = sanitizer.CleanResponse(complexInput)
 	if !strings.Contains(cleaned, "Hello world") || !strings.Contains(cleaned, "Good response") {
 		t.Errorf("Expected cleaned response to contain main content, got %s", cleaned)
 	}

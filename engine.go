@@ -117,6 +117,30 @@ func DefaultGenerationParams() GenerationParams {
 	}
 }
 
+// EngineMetricsSnapshot is a copy of metrics data without mutex for safe copying
+type EngineMetricsSnapshot struct {
+	// Performance metrics
+	TotalRequests       int64         `json:"total_requests"`
+	SuccessfulRequests  int64         `json:"successful_requests"`
+	FailedRequests      int64         `json:"failed_requests"`
+	AverageResponseTime time.Duration `json:"average_response_time"`
+
+	// Resource metrics
+	ModelName       string `json:"model_name"`
+	TokensGenerated int64  `json:"tokens_generated"`
+
+	// Current state
+	ActiveRequests int           `json:"active_requests"`
+	QueuedRequests int           `json:"queued_requests"`
+	LastActivity   time.Time     `json:"last_activity"`
+	Uptime         time.Duration `json:"uptime"`
+	StartTime      time.Time     `json:"start_time"`
+
+	// Error tracking
+	LastError  string         `json:"last_error,omitempty"`
+	ErrorCount map[string]int `json:"error_count"`
+}
+
 // EngineMetrics contains performance and resource metrics
 type EngineMetrics struct {
 	// Performance metrics
@@ -217,19 +241,31 @@ func (m *EngineMetrics) AddTokensGenerated(count int64) {
 }
 
 // GetSnapshot returns a thread-safe snapshot of current metrics
-func (m *EngineMetrics) GetSnapshot() EngineMetrics {
+func (m *EngineMetrics) GetSnapshot() EngineMetricsSnapshot {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	// Calculate uptime
 	uptime := time.Since(m.StartTime)
 
-	// Create a copy with current uptime
-	snapshot := *m
-	snapshot.Uptime = uptime
+	// Create a copy without the mutex to avoid copylocks issue
+	snapshot := EngineMetricsSnapshot{
+		TotalRequests:       m.TotalRequests,
+		SuccessfulRequests:  m.SuccessfulRequests,
+		FailedRequests:      m.FailedRequests,
+		AverageResponseTime: m.AverageResponseTime,
+		ModelName:           m.ModelName,
+		TokensGenerated:     m.TokensGenerated,
+		ActiveRequests:      m.ActiveRequests,
+		QueuedRequests:      m.QueuedRequests,
+		LastActivity:        m.LastActivity,
+		Uptime:              uptime,
+		StartTime:           m.StartTime,
+		LastError:           m.LastError,
+		ErrorCount:          make(map[string]int),
+	}
 
 	// Copy error count map
-	snapshot.ErrorCount = make(map[string]int)
 	for k, v := range m.ErrorCount {
 		snapshot.ErrorCount[k] = v
 	}
@@ -791,7 +827,7 @@ func (e *AdvancedEngine) Chat(messages []Message) (*Response, error) {
 
 		tokens := 0
 		if tokenCount, exists := response.Metadata["tokens_generated"]; exists {
-			if tc, ok := tokenCount.(int64); ok {
+			if tc, tcOk := tokenCount.(int64); tcOk {
 				tokens = int(tc)
 			}
 		}

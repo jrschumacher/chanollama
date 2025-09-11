@@ -431,11 +431,7 @@ func (cm *ConversationManager) needsTruncation(messages []Message) bool {
 
 	// Check token count limit
 	totalTokens := cm.tokenEstimator.EstimateMessagesTokens(messages)
-	if totalTokens > cm.config.MaxTokens {
-		return true
-	}
-
-	return false
+	return totalTokens > cm.config.MaxTokens
 }
 
 // EstimateTokens estimates tokens for a slice of messages
