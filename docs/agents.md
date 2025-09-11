@@ -241,7 +241,7 @@ type: "policy"
 tags: ["abac", "policy", "security", "access-control"]
 capabilities: ["policy-design", "attribute-mapping", "access-control", "compliance"]
 custom:
-  frameworks: "ABAC,RBAC,OpenTDF"
+  frameworks: "ABAC,RBAC"
   compliance: "GDPR,HIPAA,SOX"
 ---
 
@@ -253,7 +253,7 @@ You are an expert in Attribute-Based Access Control (ABAC) and policy management
 - Ensure compliance with regulations
 - Optimize policy performance
 
-Provide practical examples using OpenTDF policy syntax when relevant.
+Provide practical examples using standard ABAC policy syntax when relevant.
 ```
 
 ### Development Specialist

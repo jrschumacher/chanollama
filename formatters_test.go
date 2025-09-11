@@ -24,7 +24,7 @@ func TestDetailedFormatterSingleResult(t *testing.T) {
 	formatter := NewDetailedFormatter("Test")
 	
 	result := EvalResult{
-		Query:         "What is OpenTDF?",
+		Query:         "What is data encryption?",
 		SelectedAgent: "concept-agent",
 		ResponseTime:  time.Millisecond * 500,
 		QualityScore:  8.5,
@@ -40,7 +40,7 @@ func TestDetailedFormatterSingleResult(t *testing.T) {
 	output := formatter.FormatSingleResult(result)
 	
 	// Check that key information is included
-	if !strings.Contains(output, "What is OpenTDF?") {
+	if !strings.Contains(output, "What is data encryption?") {
 		t.Error("Output should contain query")
 	}
 	if !strings.Contains(output, "concept-agent") {

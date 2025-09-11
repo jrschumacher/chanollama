@@ -274,7 +274,7 @@ func TestConversationPatternDetection(t *testing.T) {
 	sanitizer := NewTokenSanitizer()
 	
 	// Test legitimate conversation that should not stop
-	legitimateConvo := `Here's how to use OpenTDF:
+	legitimateConvo := `Here's how to use the security platform:
 
 1. Install the CLI
 2. Configure your platform
@@ -297,7 +297,7 @@ Assistant: I can help with that too.`
 	}
 	
 	// Test borderline case - conversation pattern after good content
-	borderlineConvo := `This is a comprehensive answer about OpenTDF and its features.
+	borderlineConvo := `This is a comprehensive answer about security platforms and their features.
 
 User:`
 	

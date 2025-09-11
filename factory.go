@@ -90,6 +90,18 @@ func validateModelPath(modelPath string) error {
 
 // IsModelFile checks if the given string looks like a model file path
 func IsModelFile(model string) bool {
+	// Reject URLs (HTTP/HTTPS/FTP schemes)
+	if strings.HasPrefix(strings.ToLower(model), "http://") || 
+	   strings.HasPrefix(strings.ToLower(model), "https://") ||
+	   strings.HasPrefix(strings.ToLower(model), "ftp://") {
+		return false
+	}
+	
+	// Reject model names (format like "model:tag")
+	if strings.Contains(model, ":") && !strings.Contains(model, "/") && !strings.Contains(model, "\\") {
+		return false
+	}
+	
 	// Check for file path indicators
 	if strings.Contains(model, "/") || strings.Contains(model, "\\") {
 		return true
@@ -110,7 +122,7 @@ func AutoDetectMode(model string) (bool, string) {
 		}
 	}
 	
-	// Default to HTTP mode
+	// Default to offline mode with model name (user needs to provide model path)
 	return false, ""
 }
 

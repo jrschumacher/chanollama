@@ -168,24 +168,24 @@ func TestExtractKeywords(t *testing.T) {
 		t.Errorf("Expected nil keywords for zero max, got %v", keywords)
 	}
 	
-	// Test keyword extraction
-	text := "OpenTDF is a data security platform. OpenTDF provides encryption and access control."
+	// Test keyword extraction with repeated words
+	text := "Machine learning is a powerful technology. Machine learning provides automation and insights."
 	keywords = processor.ExtractKeywords(text, 3)
 	
 	if len(keywords) != 3 {
 		t.Errorf("Expected 3 keywords, got %d", len(keywords))
 	}
 	
-	// Should contain "opentdf" as it appears twice
+	// Should contain "machine" as it appears twice
 	found := false
 	for _, keyword := range keywords {
-		if keyword == "opentdf" {
+		if keyword == "machine" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Errorf("Expected 'opentdf' to be in keywords, got %v", keywords)
+		t.Errorf("Expected 'machine' to be in keywords, got %v", keywords)
 	}
 	
 	// Test with more keywords requested than available

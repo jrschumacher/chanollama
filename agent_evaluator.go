@@ -51,30 +51,30 @@ func (ae *AgentEvaluator) loadAgentsFromFiles(dirPath string) error {
 	return ae.loadCoreAgents()
 }
 
-// loadCoreAgents loads the four core OpenTDF agents
+// loadCoreAgents loads the four core security platform agents
 func (ae *AgentEvaluator) loadCoreAgents() error {
 	agents := map[string]AgentMetadata{
 		"policy": {
 			Name:        "Policy Agent",
-			Description: "OpenTDF policy specialist expert in ABAC design and implementation",
+			Description: "Security policy specialist expert in ABAC design and implementation",
 			Capabilities: []string{"policy_design", "attributes", "access_control", "abac"},
 			Tags:        []string{"policy", "security", "access_control"},
 		},
 		"development": {
 			Name:        "Development Agent",
-			Description: "Multi-language SDK specialist for OpenTDF integration",
+			Description: "Multi-language SDK specialist for security platform integration",
 			Capabilities: []string{"sdk_integration", "api_usage", "code_examples", "troubleshooting"},
 			Tags:        []string{"development", "sdk", "integration", "api"},
 		},
 		"deployment": {
 			Name:        "Deployment Agent",
-			Description: "Installation and configuration specialist for OpenTDF platforms",
+			Description: "Installation and configuration specialist for security platforms",
 			Capabilities: []string{"installation", "configuration", "docker", "kubernetes", "troubleshooting"},
 			Tags:        []string{"deployment", "installation", "configuration", "devops"},
 		},
 		"general": {
 			Name:        "General Agent",
-			Description: "OpenTDF concepts and architecture specialist",
+			Description: "Security platform concepts and architecture specialist",
 			Capabilities: []string{"concepts", "architecture", "explanations", "guidance"},
 			Tags:        []string{"general", "concepts", "education", "overview"},
 		},
@@ -96,7 +96,7 @@ func (ae *AgentEvaluator) getSystemPromptForAgent(token string) string {
 	// These will be loaded from files in /pkg/llm, for now return basic prompts
 	switch token {
 	case "policy":
-		return `You are an OpenTDF policy specialist expert in Attribute-Based Access Control (ABAC) design and implementation.
+		return `You are a security policy specialist expert in Attribute-Based Access Control (ABAC) design and implementation.
 
 **Core Knowledge:**
 - **Attributes**: Namespace design, hierarchical structures, value management
@@ -105,10 +105,10 @@ func (ae *AgentEvaluator) getSystemPromptForAgent(token string) string {
 - **Registered Resources**: Onboarding, metadata, lifecycle management
 - Policy design patterns and best practices
 
-Provide strategic guidance on policy management, ABAC design, and OpenTDF security policies.`
+Provide strategic guidance on policy management, ABAC design, and security platform policies.`
 
 	case "development":
-		return `You are a multi-language SDK specialist expert in OpenTDF integration and application development.
+		return `You are a multi-language SDK specialist expert in security platform integration and application development.
 
 **Core Knowledge:**
 - **SDKs**: Java, Go, JavaScript/TypeScript implementations
@@ -119,7 +119,7 @@ Provide strategic guidance on policy management, ABAC design, and OpenTDF securi
 Provide practical development guidance, code examples, and integration solutions.`
 
 	case "deployment":
-		return `You are an installation and configuration specialist expert in OpenTDF platform deployment.
+		return `You are an installation and configuration specialist expert in security platform deployment.
 
 **Core Knowledge:**
 - **Installation**: Docker, Kubernetes, bare metal deployment
@@ -130,18 +130,18 @@ Provide practical development guidance, code examples, and integration solutions
 Provide practical deployment guidance, configuration help, and troubleshooting solutions.`
 
 	case "general":
-		return `You are an OpenTDF concepts and architecture specialist providing educational guidance.
+		return `You are a security platform concepts and architecture specialist providing educational guidance.
 
 **Core Knowledge:**
-- **OpenTDF Concepts**: TDF, NanoTDF, ZTDF formats and use cases
+- **Security Concepts**: Encryption formats, access control models, data protection mechanisms
 - **Architecture**: Platform components, data flows, security model
 - **Use Cases**: Industry applications, compliance scenarios
 - **Best Practices**: Security patterns, implementation strategies
 
-Provide clear explanations of OpenTDF concepts, architecture, and strategic guidance.`
+Provide clear explanations of security platform concepts, architecture, and strategic guidance.`
 
 	default:
-		return `You are a helpful OpenTDF assistant. Provide accurate, practical guidance on OpenTDF concepts, implementation, and best practices.`
+		return `You are a helpful security platform assistant. Provide accurate, practical guidance on security platform concepts, implementation, and best practices.`
 	}
 }
 
@@ -163,10 +163,10 @@ Agents:
 - general: concepts, explanations, overview
 
 Examples:
-"create attribute" -> policy
+"create user policy" -> policy
 "Java SDK encrypt" -> development  
 "deploy Docker" -> deployment
-"what is TDF" -> general
+"what is encryption" -> general
 
 Query: "` + query + `"
 Agent:`
@@ -230,7 +230,7 @@ func (ae *AgentEvaluator) keywordBasedEvaluation(query string) string {
 	generalKeywords := map[string]int{
 		"what": 2, "how": 2, "why": 2, "explain": 3, "understand": 3,
 		"concept": 4, "architecture": 4, "overview": 3, "introduction": 3,
-		"tdf": 3, "nanotdf": 3, "ztdf": 3, "opentdf": 2,
+		"encryption": 3, "security": 3, "platform": 3, "data protection": 2,
 	}
 	
 	// Score each category

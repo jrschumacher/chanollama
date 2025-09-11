@@ -142,13 +142,13 @@ func TestSummarizeConversation(t *testing.T) {
 	
 	// Test with messages
 	messages := []Message{
-		NewUserMessage("What is OpenTDF?"),
-		NewAssistantMessage("OpenTDF is a data security platform..."),
-		NewUserMessage("How do I install it?"),
-		NewAssistantMessage("You can install OpenTDF using..."),
+		NewUserMessage("What is data encryption?"),
+		NewAssistantMessage("Data encryption is a security technique..."),
+		NewUserMessage("How do I implement it?"),
+		NewAssistantMessage("You can implement encryption using..."),
 	}
 	
-	summary, err := summarizer.SummarizeConversation(messages, "OpenTDF discussion")
+	summary, err := summarizer.SummarizeConversation(messages, "Security discussion")
 	if err != nil {
 		t.Errorf("Expected no error for valid messages, got %s", err.Error())
 	}
@@ -173,8 +173,8 @@ func TestSummarizeConversation(t *testing.T) {
 		t.Error("Expected created timestamp to be set")
 	}
 	
-	if summary.Context != "OpenTDF discussion" {
-		t.Errorf("Expected context 'OpenTDF discussion', got %s", summary.Context)
+	if summary.Context != "Security discussion" {
+		t.Errorf("Expected context 'Security discussion', got %s", summary.Context)
 	}
 	
 	// TokensSaved might be 0 if summary is longer than original
@@ -191,8 +191,8 @@ func TestSummarizeConversationFiltering(t *testing.T) {
 	// Test with system messages (should be filtered out)
 	messages := []Message{
 		NewSystemMessage("You are a helpful assistant"),
-		NewUserMessage("What is OpenTDF?"),
-		NewAssistantMessage("OpenTDF is..."),
+		NewUserMessage("What is encryption?"),
+		NewAssistantMessage("Encryption is..."),
 	}
 	
 	summary, err := summarizer.SummarizeConversation(messages, "")

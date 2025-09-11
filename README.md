@@ -309,7 +309,7 @@ vectorStore.AddDocuments(docs)
 // Simple keyword-based RAG
 simpleRAG := chanollama.NewSimpleRAGStore("./simple_index.json")
 simpleRAG.AddDocument(chanollama.Document{
-    ID: "doc1", Content: "OpenTDF provides data security...",
+    ID: "doc1", Content: "Security platforms provide data protection...",
 })
 
 // Query with RAG context
@@ -468,7 +468,7 @@ if err != nil {
 
 ### Safety Wrapper for Implementers
 
-For applications using chanollama (like otdfctl), add this safety wrapper:
+For applications using chanollama, add this safety wrapper:
 
 ```go
 // In your application code

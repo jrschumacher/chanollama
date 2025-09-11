@@ -51,16 +51,16 @@ func main() {
 
 	// Example 2: Documentation Expert  
 	fmt.Println("\n📚 Documentation Expert:")
-	fmt.Println("Question: What is OpenTDF?")
+	fmt.Println("Question: What is machine learning?")
 
 	docMessages := []chanollama.Message{
 		{
 			Role: "system",
-			Content: `You are a technical documentation expert specializing in OpenTDF.
-			Provide accurate, comprehensive explanations about OpenTDF concepts, architecture, and usage.
+			Content: `You are a technical documentation expert specializing in machine learning and AI.
+			Provide accurate, comprehensive explanations about ML concepts, algorithms, and practical applications.
 			Always include practical examples when possible.`,
 		},
-		{Role: "user", Content: "What is OpenTDF and how does it work?"},
+		{Role: "user", Content: "What is machine learning and how does it work?"},
 	}
 
 	response, err = client.Chat(docMessages)

@@ -152,10 +152,10 @@ go test ./...                 # All packages
 
 ## Integration Context
 
-This library is being developed for integration with **OpenTDF's otdfctl CLI tool** (based on project path), likely to provide:
+This library is designed for integration with CLI tools and applications that need:
 - Local LLM capabilities without external dependencies
 - Embeddable models for secure offline operation
-- AI-powered features aligned with OpenTDF's data protection mission
+- AI-powered features that work completely offline
 
 ## Development Strategy & Architecture Goals
 
@@ -234,17 +234,20 @@ client.ChatStream(messages, func(token string) {
 5. **Zero external services** - Application must work without any running services
 
 ### What to Avoid
-- `client.go` HTTP implementation (legacy code)
-- Any `BaseURL` or HTTP configuration
+- **NEVER add HTTP support** - No network communication whatsoever
+- Any `BaseURL`, HTTP configuration, or network timeouts
 - Model names that require external services (`llama2:7b`)
-- Network timeouts or HTTP error handling
-- Dependencies on any running external services
+- Dependencies on any running external services (Ollama server, etc.)
+- Fallback to HTTP/network modes - **offline-only is non-negotiable**
 
-### What to Build
-- Direct GGUF model loading via `offline_client.go`
-- Channel-based token streaming using goroutines
-- In-process model inference without network calls
-- Embeddable model distribution capabilities
-- Pure Go concurrency patterns for real-time AI
+### Current Architecture (Already Implemented)
+- ✅ Direct GGUF model loading via `client.go` (using llama.cpp bindings)
+- ✅ Channel-based token streaming using goroutines
+- ✅ In-process model inference without network calls
+- ✅ Zero external dependencies except model files
+- ✅ Pure Go concurrency patterns for real-time AI
+
+### **CRITICAL**: No HTTP Support Ever
+This library is **OFFLINE-ONLY** by design. Any attempt to add HTTP support, network communication, or external service dependencies violates the core architectural principle and must be rejected.
 
 This architecture enables truly portable, offline AI applications with zero external dependencies while maintaining excellent developer ergonomics through Go's concurrency primitives.

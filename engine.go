@@ -517,7 +517,7 @@ func (e *AdvancedEngine) handleInference(req EngineRequest) EngineResponse {
 	default:
 	}
 
-	// Perform inference using the HTTP client
+	// Perform inference using the offline client
 	response, err := e.client.Chat(payload.Messages)
 	if err != nil {
 		return EngineResponse{
@@ -710,7 +710,7 @@ func (e *AdvancedEngine) collectMetrics(ctx context.Context) {
 	}
 }
 
-// performStreamingInference performs streaming inference using the HTTP client
+// performStreamingInference performs streaming inference using the offline client
 func (e *AdvancedEngine) performStreamingInference(ctx context.Context, requestID string, messages []Message) {
 	defer func() {
 		// Send final streaming response
