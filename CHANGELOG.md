@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0](https://github.com/jrschumacher/chanollama/compare/chanollama-v0.9.0...chanollama-v1.0.0) (2025-09-11)
+
+
+### Features
+
+* first commit ([13ababe](https://github.com/jrschumacher/chanollama/commit/13ababe26e90a8a088cc2daad0f1fe0da09018b6))
+* first release of the library ([d0007a8](https://github.com/jrschumacher/chanollama/commit/d0007a878483733ae7644ac084a91c10803c9c35))
+
 ## [Unreleased]
 
 ### Added
