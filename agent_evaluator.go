@@ -13,7 +13,6 @@ type AgentEvaluator struct {
 	agents            map[string]*Agent
 	defaultAgent      string
 	evaluationTimeout time.Duration
-	disableLLMEval    bool // Fallback to keyword-only evaluation
 }
 
 // NewAgentEvaluator creates a new agent evaluator
@@ -21,9 +20,8 @@ func NewAgentEvaluator(engine Engine) *AgentEvaluator {
 	return &AgentEvaluator{
 		engine:            engine,
 		agents:            make(map[string]*Agent),
-		defaultAgent:      "general",
+		defaultAgent:      "", // No default agent - developers must define their own
 		evaluationTimeout: 10 * time.Second,
-		disableLLMEval:    false,
 	}
 }
 
@@ -37,127 +35,48 @@ func (ae *AgentEvaluator) LoadAgent(token string, systemPrompt string, metadata 
 
 // LoadAgentsFromDirectory loads agents from a directory path
 func (ae *AgentEvaluator) LoadAgentsFromDirectory(dirPath string) error {
-	// Try to load from file system first, fallback to programmatic loading
-	if dirPath != "" {
-		return ae.loadAgentsFromFiles(dirPath)
+	if dirPath == "" {
+		return fmt.Errorf("directory path cannot be empty - developers must define their own agents")
 	}
-	return ae.loadCoreAgents()
+	return ae.loadAgentsFromFiles(dirPath)
 }
 
 // loadAgentsFromFiles loads agents from markdown files in the given directory
-func (ae *AgentEvaluator) loadAgentsFromFiles(_ string) error {
-	// This method would use the pkg/llm agent loader  
-	// For now, fallback to programmatic loading
-	return ae.loadCoreAgents()
+func (ae *AgentEvaluator) loadAgentsFromFiles(dirPath string) error {
+	// TODO: Implement agent loading from directory
+	// This would scan for agent definition files (e.g., *.md, *.yaml, *.json)
+	// and load agent metadata and system prompts
+	return fmt.Errorf("loading agents from files not yet implemented - use LoadAgent() to define agents programmatically")
 }
 
-// loadCoreAgents loads the four core security platform agents
-func (ae *AgentEvaluator) loadCoreAgents() error {
-	agents := map[string]AgentMetadata{
-		"policy": {
-			Name:         "Policy Agent",
-			Description:  "Security policy specialist expert in ABAC design and implementation",
-			Capabilities: []string{"policy_design", "attributes", "access_control", "abac"},
-			Tags:         []string{"policy", "security", "access_control"},
-		},
-		"development": {
-			Name:         "Development Agent",
-			Description:  "Multi-language SDK specialist for security platform integration",
-			Capabilities: []string{"sdk_integration", "api_usage", "code_examples", "troubleshooting"},
-			Tags:         []string{"development", "sdk", "integration", "api"},
-		},
-		"deployment": {
-			Name:         "Deployment Agent",
-			Description:  "Installation and configuration specialist for security platforms",
-			Capabilities: []string{"installation", "configuration", "docker", "kubernetes", "troubleshooting"},
-			Tags:         []string{"deployment", "installation", "configuration", "devops"},
-		},
-		"general": {
-			Name:         "General Agent",
-			Description:  "Security platform concepts and architecture specialist",
-			Capabilities: []string{"concepts", "architecture", "explanations", "guidance"},
-			Tags:         []string{"general", "concepts", "education", "overview"},
-		},
-	}
-
-	for token, metadata := range agents {
-		// System prompts will be loaded from /pkg/llm
-		systemPrompt := ae.getSystemPromptForAgent(token)
-		if err := ae.LoadAgent(token, systemPrompt, metadata); err != nil {
-			return fmt.Errorf("failed to load agent %s: %w", token, err)
-		}
-	}
-
-	return nil
-}
-
-// getSystemPromptForAgent returns the system prompt for a given agent token
-func (ae *AgentEvaluator) getSystemPromptForAgent(token string) string {
-	// These will be loaded from files in /pkg/llm, for now return basic prompts
-	switch token {
-	case "policy":
-		return `You are a security policy specialist expert in Attribute-Based Access Control (ABAC) design and implementation.
-
-**Core Knowledge:**
-- **Attributes**: Namespace design, hierarchical structures, value management
-- **Subject Mappings**: OIDC integration, role mapping, dynamic attributes  
-- **Resource Mappings**: Data classification, application integration
-- **Registered Resources**: Onboarding, metadata, lifecycle management
-- Policy design patterns and best practices
-
-Provide strategic guidance on policy management, ABAC design, and security platform policies.`
-
-	case "development":
-		return `You are a multi-language SDK specialist expert in security platform integration and application development.
-
-**Core Knowledge:**
-- **SDKs**: Java, Go, JavaScript/TypeScript implementations
-- **API Integration**: REST APIs, authentication, error handling
-- **Code Examples**: Working implementations, best practices
-- **Troubleshooting**: Common issues, debugging, performance optimization
-
-Provide practical development guidance, code examples, and integration solutions.`
-
-	case "deployment":
-		return `You are an installation and configuration specialist expert in security platform deployment.
-
-**Core Knowledge:**
-- **Installation**: Docker, Kubernetes, bare metal deployment
-- **Configuration**: Environment setup, networking, certificates
-- **Troubleshooting**: Common deployment issues, debugging
-- **DevOps**: CI/CD integration, monitoring, maintenance
-
-Provide practical deployment guidance, configuration help, and troubleshooting solutions.`
-
-	case "general":
-		return `You are a security platform concepts and architecture specialist providing educational guidance.
-
-**Core Knowledge:**
-- **Security Concepts**: Encryption formats, access control models, data protection mechanisms
-- **Architecture**: Platform components, data flows, security model
-- **Use Cases**: Industry applications, compliance scenarios
-- **Best Practices**: Security patterns, implementation strategies
-
-Provide clear explanations of security platform concepts, architecture, and strategic guidance.`
-
-	default:
-		return `You are a helpful security platform assistant. Provide accurate, practical guidance on security platform concepts, implementation, and best practices.`
-	}
-}
 
 // EvaluateQuery analyzes a user query and returns the best agent token
 func (ae *AgentEvaluator) EvaluateQuery(ctx context.Context, query string) (string, error) {
-	// Use LLM-based evaluation if enabled and engine is available
-	if !ae.disableLLMEval && ae.engine != nil {
-		return ae.llmBasedEvaluation(ctx, query)
+	// Check if any agents are loaded
+	if len(ae.agents) == 0 {
+		return "", fmt.Errorf("no agents loaded - use LoadAgent() to define agents for your application")
 	}
 	
-	// Fallback to keyword-based evaluation
-	return ae.keywordBasedEvaluation(query), nil
+	// Use LLM-based evaluation if engine is available
+	if ae.engine != nil {
+		agent, err := ae.llmBasedEvaluation(ctx, query)
+		if err == nil && agent != "" {
+			return agent, nil
+		}
+		// If LLM evaluation fails, fall through to simple fallback
+	}
+	
+	// Simple fallback: return first available agent
+	// This ensures the system always works, even without LLM
+	for token := range ae.agents {
+		return token, nil
+	}
+	
+	return "", fmt.Errorf("no agents available")
 }
 
 // llmBasedEvaluation uses the LLM engine to intelligently select the best agent
-func (ae *AgentEvaluator) llmBasedEvaluation(ctx context.Context, query string) (string, error) {
+func (ae *AgentEvaluator) llmBasedEvaluation(_ context.Context, query string) (string, error) {
 	prompt := ae.buildEvaluationPrompt(query)
 	messages := []Message{NewUserMessage(prompt)}
 	
@@ -165,38 +84,50 @@ func (ae *AgentEvaluator) llmBasedEvaluation(ctx context.Context, query string) 
 	// TODO: In a more complete implementation, this would use a context-aware method with timeout
 	response, err := ae.engine.Chat(messages)
 	if err != nil {
-		// Fallback to keyword-based evaluation on error
-		return ae.keywordBasedEvaluation(query), nil
+		return "", err // Return error, let caller handle fallback
 	}
 	
 	// Parse the agent token from response
 	token := ae.parseAgentToken(response.Content)
 	if token == "" {
-		// Fallback to keyword-based evaluation if parsing fails
-		return ae.keywordBasedEvaluation(query), nil
+		return "", fmt.Errorf("could not parse agent from LLM response: %s", response.Content)
 	}
 	
 	return token, nil
 }
 
-// buildEvaluationPrompt creates the prompt for agent evaluation
+// buildEvaluationPrompt creates the prompt for agent evaluation using loaded agent metadata
 func (ae *AgentEvaluator) buildEvaluationPrompt(query string) string {
-	return `Route this query to the best agent. Return only one word:
+	var agentDescriptions []string
+	
+	// Generate agent descriptions from metadata
+	for token, agent := range ae.agents {
+		if agent.Metadata.Description != "" {
+			desc := fmt.Sprintf("- %s: %s", token, agent.Metadata.Description)
+			agentDescriptions = append(agentDescriptions, desc)
+		} else {
+			// Fallback to tags if no description
+			tags := strings.Join(agent.Metadata.Tags, ", ")
+			desc := fmt.Sprintf("- %s: %s", token, tags)
+			agentDescriptions = append(agentDescriptions, desc)
+		}
+	}
+	
+	// If no agents loaded, return simple prompt
+	if len(agentDescriptions) == 0 {
+		return fmt.Sprintf(`Analyze this query and respond with the most appropriate category:
 
-Agents:
-- policy: ABAC, attributes, permissions, access control
-- development: SDKs, APIs, code, integration
-- deployment: install, setup, Docker, configuration  
-- general: concepts, explanations, overview
+Query: "%s"
+Category:`, query)
+	}
+	
+	return fmt.Sprintf(`Route this query to the best agent. Return only the agent name:
 
-Examples:
-"create user policy" -> policy
-"Java SDK encrypt" -> development  
-"deploy Docker" -> deployment
-"what is encryption" -> general
+Available Agents:
+%s
 
-Query: "` + query + `"
-Agent:`
+Query: "%s"
+Agent:`, strings.Join(agentDescriptions, "\n"), query)
 }
 
 // parseAgentToken extracts the agent token from the LLM response
@@ -207,97 +138,32 @@ func (ae *AgentEvaluator) parseAgentToken(response string) string {
 	// Remove common prefixes/suffixes
 	token = strings.TrimPrefix(token, "response:")
 	token = strings.TrimPrefix(token, "agent:")
+	token = strings.TrimPrefix(token, "category:")
 	token = strings.TrimSpace(token)
 
-	// Extract just the token if it's in a sentence
-	validTokens := []string{"policy", "development", "deployment", "general"}
-	for _, validToken := range validTokens {
-		if strings.Contains(token, validToken) {
-			return validToken
+	// First, try exact match with loaded agents
+	if _, exists := ae.agents[token]; exists {
+		return token
+	}
+
+	// If no exact match, look for partial matches in the response
+	for agentToken := range ae.agents {
+		if strings.Contains(token, agentToken) {
+			return agentToken
+		}
+	}
+
+	// If still no match, check if any agent names are mentioned in the response
+	for agentToken, agent := range ae.agents {
+		agentName := strings.ToLower(agent.Metadata.Name)
+		if strings.Contains(token, agentName) || strings.Contains(response, agentName) {
+			return agentToken
 		}
 	}
 
 	return ""
 }
 
-// keywordBasedEvaluation provides robust evaluation using keyword matching
-func (ae *AgentEvaluator) keywordBasedEvaluation(query string) string {
-	query = strings.ToLower(query)
-
-	// Score-based approach for better accuracy
-	scores := map[string]int{
-		"policy":      0,
-		"development": 0,
-		"deployment":  0,
-		"general":     0,
-	}
-
-	// Policy keywords with weights
-	policyKeywords := map[string]int{
-		"policy": 5, "attribute": 4, "abac": 5, "access": 3, "permission": 4,
-		"namespace": 4, "subject": 3, "resource": 3, "mapping": 3, "grant": 3,
-		"authorization": 4, "control": 2, "security": 2, "role": 2,
-	}
-
-	// Development keywords with weights
-	devKeywords := map[string]int{
-		"sdk": 5, "api": 4, "code": 4, "java": 4, "javascript": 4, "go": 3,
-		"integration": 4, "encrypt": 4, "decrypt": 4, "develop": 3, "client": 3,
-		"library": 3, "example": 2, "implementation": 3, "typescript": 4,
-	}
-
-	// Deployment keywords with weights
-	deployKeywords := map[string]int{
-		"install": 5, "deploy": 5, "docker": 5, "kubernetes": 5, "k8s": 5,
-		"config": 4, "setup": 4, "certificate": 4, "network": 3, "server": 3,
-		"environment": 3, "production": 3, "staging": 2, "helm": 4,
-	}
-
-	// General keywords with weights (concepts, architecture)
-	generalKeywords := map[string]int{
-		"what": 2, "how": 2, "why": 2, "explain": 3, "understand": 3,
-		"concept": 4, "architecture": 4, "overview": 3, "introduction": 3,
-		"encryption": 3, "security": 3, "platform": 3, "data protection": 2,
-	}
-
-	// Score each category
-	for keyword, weight := range policyKeywords {
-		if strings.Contains(query, keyword) {
-			scores["policy"] += weight
-		}
-	}
-
-	for keyword, weight := range devKeywords {
-		if strings.Contains(query, keyword) {
-			scores["development"] += weight
-		}
-	}
-
-	for keyword, weight := range deployKeywords {
-		if strings.Contains(query, keyword) {
-			scores["deployment"] += weight
-		}
-	}
-
-	for keyword, weight := range generalKeywords {
-		if strings.Contains(query, keyword) {
-			scores["general"] += weight
-		}
-	}
-
-	// Find the highest scoring agent
-	maxScore := 0
-	selectedAgent := "general" // default
-
-	for agent, score := range scores {
-		if score > maxScore {
-			maxScore = score
-			selectedAgent = agent
-		}
-	}
-
-	return selectedAgent
-}
 
 // GetAgent returns the agent for a given token
 func (ae *AgentEvaluator) GetAgent(token string) (*Agent, error) {
@@ -326,17 +192,3 @@ func (ae *AgentEvaluator) SetDefaultAgent(token string) error {
 	return nil
 }
 
-// DisableLLMEvaluation disables LLM-based agent evaluation and uses keyword-only matching
-func (ae *AgentEvaluator) DisableLLMEvaluation() {
-	ae.disableLLMEval = true
-}
-
-// EnableLLMEvaluation enables LLM-based agent evaluation
-func (ae *AgentEvaluator) EnableLLMEvaluation() {
-	ae.disableLLMEval = false
-}
-
-// IsLLMEvaluationEnabled returns whether LLM evaluation is enabled
-func (ae *AgentEvaluator) IsLLMEvaluationEnabled() bool {
-	return !ae.disableLLMEval
-}

@@ -194,27 +194,6 @@ func (ae *AgentEngine) GetAgentInfo(token string) (*Agent, error) {
 	return ae.evaluator.GetAgent(token)
 }
 
-// DisableLLMEvaluation disables LLM-based agent evaluation to prevent context overflow
-func (ae *AgentEngine) DisableLLMEvaluation() {
-	if ae.evaluator != nil {
-		ae.evaluator.DisableLLMEvaluation()
-	}
-}
-
-// EnableLLMEvaluation enables LLM-based agent evaluation
-func (ae *AgentEngine) EnableLLMEvaluation() {
-	if ae.evaluator != nil {
-		ae.evaluator.EnableLLMEvaluation()
-	}
-}
-
-// IsLLMEvaluationEnabled returns whether LLM evaluation is enabled
-func (ae *AgentEngine) IsLLMEvaluationEnabled() bool {
-	if ae.evaluator != nil {
-		return ae.evaluator.IsLLMEvaluationEnabled()
-	}
-	return false
-}
 
 // IsHealthy checks if the underlying engine is healthy
 func (ae *AgentEngine) IsHealthy() bool {

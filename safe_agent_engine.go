@@ -56,10 +56,9 @@ func (sae *SafeAgentEngine) handleError(err error) {
 	if isContextError {
 		sae.errorCount++
 
-		// If we've had too many context errors, disable LLM evaluation
-		if sae.errorCount >= sae.maxErrors && sae.IsLLMEvaluationEnabled() {
-			fmt.Printf("⚠️  Context overflow detected. Switching to keyword-based agent selection.\n")
-			sae.DisableLLMEvaluation()
+		// If we've had too many context errors, log warning
+		if sae.errorCount >= sae.maxErrors {
+			fmt.Printf("⚠️  Context overflow detected. Using fallback agent selection.\n")
 		}
 	}
 }
@@ -76,11 +75,14 @@ func (sae *SafeAgentEngine) ResetErrorCount() {
 
 // GetCurrentAgent returns the agent that would be selected for a given query with error handling
 func (sae *SafeAgentEngine) GetCurrentAgent(query string) (*Agent, error) {
-	// If LLM evaluation is disabled due to errors, use keyword evaluation directly
-	if !sae.IsLLMEvaluationEnabled() {
+	// If too many errors occurred, use simple fallback (first available agent)
+	if sae.errorCount >= sae.maxErrors {
 		if sae.evaluator != nil {
-			agentToken := sae.evaluator.keywordBasedEvaluation(query)
-			return sae.evaluator.GetAgent(agentToken)
+			// Simple fallback: return first available agent
+			for token := range sae.evaluator.agents {
+				return sae.evaluator.GetAgent(token)
+			}
+			return nil, fmt.Errorf("no agents available")
 		}
 		return nil, fmt.Errorf("agent evaluator not available")
 	}
