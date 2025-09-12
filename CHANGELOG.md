@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.0.0 (2025-09-12)
+
+
+### Features
+
+* first commit ([13ababe](https://github.com/jrschumacher/chanollama/commit/13ababe26e90a8a088cc2daad0f1fe0da09018b6))
+* first release of the library ([d0007a8](https://github.com/jrschumacher/chanollama/commit/d0007a878483733ae7644ac084a91c10803c9c35))
+
+
+### Bug Fixes
+
+* agent evaluation removing keywords ([83800b8](https://github.com/jrschumacher/chanollama/commit/83800b883122169d2ddd7182aed1ab73ac5edbb1))
+* bump ([effc6c5](https://github.com/jrschumacher/chanollama/commit/effc6c599cb737ce8fa74ccd738f44a46fc679b3))
+* lint errors ([a859b10](https://github.com/jrschumacher/chanollama/commit/a859b1015285b41889b59d47c3fb253dbe3e3643))
+* lint issues ([e17b70b](https://github.com/jrschumacher/chanollama/commit/e17b70b8dc2804cd82d5f0abcd61542e43c4caaa))
+* lint issues ([f5464af](https://github.com/jrschumacher/chanollama/commit/f5464af61c0471c5890b2c8e42bb77a104b4947d))
+* lint issues ([16367e3](https://github.com/jrschumacher/chanollama/commit/16367e3940aca4ec90252e8c94fe8b340b444f9f))
+* linter issue ([60e20d5](https://github.com/jrschumacher/chanollama/commit/60e20d54d02e5a9ca45f6e7c6a1891465a808686))
+* remove custom lint file ([8bb4489](https://github.com/jrschumacher/chanollama/commit/8bb448984335634e38fb2c8deb896e44c99debfd))
+
 ## [Unreleased]
 
 ### Added
