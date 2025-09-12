@@ -153,6 +153,7 @@ func (ae *AgentEvaluator) EvaluateQuery(ctx context.Context, query string) (stri
 }
 
 // buildEvaluationPrompt creates the prompt for agent evaluation
+//nolint:unused
 func (ae *AgentEvaluator) buildEvaluationPrompt(query string) string {
 	return `Route this query to the best agent. Return only one word:
 
@@ -173,6 +174,7 @@ Agent:`
 }
 
 // parseAgentToken extracts the agent token from the LLM response
+//nolint:unused
 func (ae *AgentEvaluator) parseAgentToken(response string) string {
 	// Clean up the response
 	token := strings.TrimSpace(strings.ToLower(response))

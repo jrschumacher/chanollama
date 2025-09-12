@@ -451,39 +451,6 @@ type ContextSummarizer interface {
 	SummarizeHistory(messages []Message) (string, error)
 }
 
-// Internal Ollama API types
-type ollamaRequest struct {
-	Model    string                 `json:"model"`
-	Messages []Message              `json:"messages"`
-	Stream   bool                   `json:"stream"`
-	Options  map[string]interface{} `json:"options,omitempty"`
-}
-
-type ollamaResponse struct {
-	Message struct {
-		Role    string `json:"role"`
-		Content string `json:"content"`
-	} `json:"message"`
-	Done bool `json:"done"`
-}
-
-type ollamaStreamResponse struct {
-	Message struct {
-		Role    string `json:"role"`
-		Content string `json:"content"`
-	} `json:"message"`
-	Done bool `json:"done"`
-}
-
-// Embedding API types
-type ollamaEmbedRequest struct {
-	Model string `json:"model"`
-	Input string `json:"input"`
-}
-
-type ollamaEmbedResponse struct {
-	Embeddings [][]float64 `json:"embeddings"`
-}
 
 // EmbeddingResponse represents an embedding generation response
 type EmbeddingResponse struct {

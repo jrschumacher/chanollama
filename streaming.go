@@ -123,7 +123,6 @@ func (s *StreamingEngine) Close() error {
 // StreamCollector collects streaming tokens into a complete response
 type StreamCollector struct {
 	tokens []string
-	err    error
 }
 
 // NewStreamCollector creates a new stream collector
