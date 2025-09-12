@@ -89,7 +89,7 @@ func main() {
 			continue
 		}
 
-		fmt.Println("\n")
+		fmt.Print("\n\n")
 	}
 
 	fmt.Println("🏁 Q&A session ended!")

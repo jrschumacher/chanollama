@@ -140,7 +140,6 @@ func (tp *TextProcessor) cleanWithCodePreservation(text string) string {
 			lengthDiff := len(cleanedBefore) - len(beforeBlock)
 			result = cleanedBefore + result[start:]
 			offset += lengthDiff
-			start += lengthDiff
 			end += lengthDiff
 		}
 

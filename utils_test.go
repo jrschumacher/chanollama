@@ -74,8 +74,8 @@ func TestEstimateMessagesTokens(t *testing.T) {
 	}
 
 	// Test empty slice
-	if tokens := estimator.EstimateMessagesTokens([]Message{}); tokens != 0 {
-		t.Errorf("Expected 0 tokens for empty messages, got %d", tokens)
+	if emptyTokens := estimator.EstimateMessagesTokens([]Message{}); emptyTokens != 0 {
+		t.Errorf("Expected 0 tokens for empty messages, got %d", emptyTokens)
 	}
 }
 

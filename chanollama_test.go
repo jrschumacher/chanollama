@@ -314,6 +314,7 @@ func TestSafeInferenceWithoutModel(t *testing.T) {
 
 	if response == nil {
 		t.Error("Response should not be nil even on error")
+		return
 	}
 
 	if response.Error == nil {

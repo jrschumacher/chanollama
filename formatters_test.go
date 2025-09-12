@@ -339,8 +339,8 @@ func TestTruncateString(t *testing.T) {
 
 	// Test exact limit
 	exact := "exactly twenty c"
-	if result := truncateString(exact, 16); result != exact {
-		t.Errorf("String at exact limit should be unchanged, got %s", result)
+	if exactResult := truncateString(exact, 16); exactResult != exact {
+		t.Errorf("String at exact limit should be unchanged, got %s", exactResult)
 	}
 }
 

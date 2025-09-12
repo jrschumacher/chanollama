@@ -36,7 +36,7 @@ func main() {
 	conversation.AddSystemMessage(`You are a helpful programming tutor. Give brief, clear answers.`)
 
 	fmt.Println("🎓 Programming Tutor Session")
-	fmt.Println("Let's have a conversation that builds upon itself...\n")
+	fmt.Print("Let's have a conversation that builds upon itself...\n\n")
 
 	// Turn 1: Ask about variables
 	fmt.Println("👤 Student: What are variables?")

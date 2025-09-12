@@ -70,9 +70,8 @@ func (sl *SuiteLoader) resolveSuitePath(filePath string) (string, error) {
 	}
 
 	// Also try common extensions if not provided
-	baseFilePath := filePath
 	if !strings.HasSuffix(filePath, ".json") {
-		baseFilePath = filePath + ".json"
+		baseFilePath := filePath + ".json"
 
 		for _, searchPath := range sl.searchPaths {
 			candidatePath := filepath.Join(searchPath, baseFilePath)
@@ -159,11 +158,9 @@ func (sl *SuiteLoader) validateTestCase(testCase TestCase, index int) error {
 	// Note: MaxLength validation removed as TestCase doesn't have MaxLength field
 	// This could be added in the future if needed
 
-	// Validate category if provided
-	if testCase.Category != "" && !sl.isValidCategory(testCase.Category) {
-		// Warning only - don't fail validation for unknown categories
-		// This allows for domain-specific categories
-	}
+	// Validate category if provided - warning only, don't fail validation for unknown categories
+	// This allows for domain-specific categories
+	_ = testCase.Category != "" && !sl.isValidCategory(testCase.Category)
 
 	return nil
 }

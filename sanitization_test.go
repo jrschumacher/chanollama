@@ -263,8 +263,8 @@ func TestSanitizerPerformance(t *testing.T) {
 	// Test with many tokens
 	for i := 0; i < 1000; i++ {
 		token := "token" + string(rune(i%26+97)) // a-z cycling
-		cleaned := sanitizer.CleanStreamingToken(token)
-		if cleaned != token {
+		tokenCleaned := sanitizer.CleanStreamingToken(token)
+		if tokenCleaned != token {
 			t.Errorf("Normal token %s should not be cleaned", token)
 		}
 	}
