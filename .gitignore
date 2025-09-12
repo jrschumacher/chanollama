@@ -1,2 +1,5 @@
 # Added by goreleaser init:
 dist/
+
+# spec-kit generated files and working directory
+.specify/
