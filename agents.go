@@ -28,11 +28,8 @@ type AgentMetadata struct {
 type AgentType string
 
 const (
-	AgentTypeGeneral     AgentType = "general"
-	AgentTypePolicy      AgentType = "policy"
-	AgentTypeDevelopment AgentType = "development"
-	AgentTypeDeployment  AgentType = "deployment"
-	AgentTypeCustom      AgentType = "custom"
+	AgentTypeGeneral AgentType = "general"
+	AgentTypeCustom  AgentType = "custom"
 )
 
 // Agent represents a specialized AI agent with specific knowledge and capabilities
@@ -404,23 +401,30 @@ func (s *SimpleSelectionStrategy) CalculateRelevanceScore(agent *Agent, context 
 		score += 0.1
 	}
 
-	// Score based on agent type preference (simple keyword matching)
+	// Score based on agent capabilities and tags (flexible matching)
 	query := strings.ToLower(context.UserQuery)
-	switch agent.Type {
-	case AgentTypePolicy:
-		if strings.Contains(query, "policy") || strings.Contains(query, "permission") {
-			score += 0.4
+	
+	// Check if agent capabilities match query keywords
+	for _, capability := range agent.Metadata.Capabilities {
+		capLower := strings.ToLower(capability)
+		if strings.Contains(query, capLower) {
+			score += 0.3 // Capability match is highly relevant
+			break
 		}
-	case AgentTypeDevelopment:
-		if strings.Contains(query, "code") || strings.Contains(query, "develop") || strings.Contains(query, "api") {
-			score += 0.4
+	}
+	
+	// Check if agent tags match query keywords
+	for _, tag := range agent.Metadata.Tags {
+		tagLower := strings.ToLower(tag)
+		if strings.Contains(query, tagLower) {
+			score += 0.2 // Tag match is moderately relevant
+			break
 		}
-	case AgentTypeDeployment:
-		if strings.Contains(query, "deploy") || strings.Contains(query, "install") || strings.Contains(query, "setup") {
-			score += 0.4
-		}
-	case AgentTypeGeneral:
-		score += 0.2 // General agents are always somewhat relevant
+	}
+	
+	// General agents provide baseline relevance
+	if agent.Type == AgentTypeGeneral {
+		score += 0.1
 	}
 
 	return score

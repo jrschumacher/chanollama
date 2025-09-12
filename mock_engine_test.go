@@ -17,223 +17,224 @@ type RealisticMockEngine struct {
 func NewRealisticMockEngine() *RealisticMockEngine {
 	return &RealisticMockEngine{
 		ResponseDatabase: map[string][]string{
-			"data_security_concept": {
-				`Data security platforms provide comprehensive protection through various access control mechanisms and encryption techniques.
+			"ecommerce_platform": {
+				`E-commerce platforms provide comprehensive inventory management through various tracking mechanisms and automated workflows.
 
 **Core Components:**
-- **Encryption**: Data is encrypted at rest and in transit
-- **Access Control**: Role-based or attribute-based access control systems
-- **Key Management**: Centralized key management and policy enforcement
-- **Audit Trail**: Logging and monitoring of all data access events
+- **Inventory Tracking**: Products are tracked from warehouse to delivery
+- **Order Management**: Automated order processing and fulfillment systems
+- **Customer Management**: Centralized customer data and relationship management
+- **Analytics Dashboard**: Real-time monitoring of sales metrics and trends
 
 **How it Works:**
-1. Data is encrypted using strong cryptographic algorithms
-2. Access policies are defined and enforced
-3. User credentials and attributes are validated
-4. Keys are provided only when policies allow access
+1. Products are cataloged using standardized SKU systems
+2. Inventory levels are automatically updated with each transaction
+3. Customer orders are processed through automated workflows
+4. Analytics provide insights for business optimization
 
 **Benefits:**
-- Data remains protected even when shared externally
-- Fine-grained access control based on user attributes
-- Comprehensive audit trails for compliance
-- Zero-trust security architecture
+- Streamlined operations from order to delivery
+- Real-time inventory visibility across all channels
+- Comprehensive customer journey tracking
+- Data-driven business decision making
 
-Modern data security platforms enable organizations to protect sensitive information while maintaining operational flexibility.`,
+Modern e-commerce platforms enable businesses to scale operations while maintaining customer satisfaction.`,
 
-				`Zero-trust data security platforms embed access policies directly with encrypted data. Unlike traditional perimeter-based security, these solutions travel with the data, ensuring protection regardless of storage location.
+				`Cloud-native e-commerce platforms integrate inventory management directly with sales channels. Unlike traditional isolated systems, these solutions synchronize data across all touchpoints, ensuring consistency regardless of sales channel.
 
 **Key Features:**
-- **Attribute-Based Access Control (ABAC)**: Fine-grained permissions based on user and data attributes
-- **Multiple Formats**: Support for various encryption formats and standards
-- **SDK Integration**: Support for Java, JavaScript, Go, Python, and other languages
-- **Enterprise Ready**: Scalable architecture with comprehensive audit trails
+- **Multi-Channel Integration**: Seamless connection between online, mobile, and in-store systems
+- **Multiple Formats**: Support for various product catalogs and data standards
+- **API Integration**: Support for Java, JavaScript, Go, Python, and other languages
+- **Enterprise Ready**: Scalable architecture with comprehensive reporting and analytics
 
 **Use Cases:**
-- Secure document sharing across organizations
-- Data lake protection with granular access controls
-- Compliance-driven data governance (GDPR, HIPAA, SOX)
-- Enterprise data protection and classification
+- Unified inventory across multiple sales channels
+- Real-time product availability with automated reordering
+- Customer behavior analytics across all touchpoints
+- Automated marketing campaigns based on purchase history
 
-These platforms ensure that sensitive data remains protected throughout its entire lifecycle, from creation to deletion.`,
+These platforms ensure that product data remains synchronized throughout the entire sales lifecycle, from listing to delivery.`,
 			},
 
-			"policy_management": {
-				`To create access control policies, use a structured approach with clear naming conventions:
+			"content_management": {
+				`To create content workflows, use a structured approach with clear categorization:
 
-**Step 1: Define the Policy**
-` + "```bash\nsecurity-cli policy create \\\n  --name \"organization.department\" \\\n  --rule ANY_OF\n```" + `
+**Step 1: Define the Workflow**
+` + "```bash\ncontent-cli workflow create \\\n  --name \"blog.publishing\" \\\n  --type SEQUENTIAL\n```" + `
 
 **Step 2: Verify Creation**
-` + "```bash\nsecurity-cli policy list\n```" + `
+` + "```bash\ncontent-cli workflow list\n```" + `
 
 **Best Practices:**
-- Use hierarchical naming (e.g., "company.division.team")
-- Choose appropriate rules (ANY_OF, ALL_OF, HIERARCHY)
-- Consider future expansion when designing policy structure
+- Use hierarchical naming (e.g., "publication.section.category")
+- Choose appropriate workflow types (SEQUENTIAL, PARALLEL, CONDITIONAL)
+- Consider future content types when designing workflow structure
 
-**Example JSON Definition:**
-` + "```json\n{\n  \"name\": \"organization.security-level\",\n  \"rule\": \"ANY_OF\",\n  \"values\": [\n    {\"value\": \"public\"},\n    {\"value\": \"internal\"},\n    {\"value\": \"confidential\"},\n    {\"value\": \"restricted\"}\n  ]\n}\n```" + `
+**Example JSON Configuration:**
+` + "```json\n{\n  \"name\": \"blog.content-type\",\n  \"type\": \"SEQUENTIAL\",\n  \"stages\": [\n    {\"stage\": \"draft\"},\n    {\"stage\": \"review\"},\n    {\"stage\": \"approved\"},\n    {\"stage\": \"published\"}\n  ]\n}\n```" + `
 
-**Security Considerations:**
-- Policy design affects access control performance
-- Use meaningful names that align with organizational structure
-- Regular audit of policy usage and attribute assignments`,
+**Performance Considerations:**
+- Workflow design affects content processing performance
+- Use meaningful names that align with editorial structure
+- Regular review of workflow usage and stage transitions`,
 
-				`Creating access control policies is fundamental to security system design. Here's a comprehensive approach:
+				`Creating content workflows is fundamental to publishing system design. Here's a comprehensive approach:
 
 **Command Syntax:**
-` + "```bash\nsecurity-cli policy create \\\n  --name \"your.policy.name\" \\\n  --rule ANY_OF \\\n  --active\n```" + `
+` + "```bash\ncontent-cli workflow create \\\n  --name \"your.workflow.name\" \\\n  --type SEQUENTIAL \\\n  --active\n```" + `
 
-**Policy Rules:**
-- **ANY_OF**: User needs any attribute from the policy
-- **ALL_OF**: User needs all attributes from the policy  
-- **HIERARCHY**: Supports hierarchical attribute relationships
+**Workflow Types:**
+- **SEQUENTIAL**: Content moves through stages in order
+- **PARALLEL**: Multiple reviewers can work simultaneously
+- **CONDITIONAL**: Dynamic routing based on content attributes
 
-**Planning Your Policies:**
-1. **Organizational Alignment**: Mirror your organizational structure
-2. **Data Classification**: Align with data sensitivity levels
-3. **User Roles**: Consider how users will be assigned attributes
-4. **Future Growth**: Plan for expansion and changes
+**Planning Your Workflows:**
+1. **Editorial Alignment**: Mirror your editorial structure
+2. **Content Classification**: Align with content types and sensitivity
+3. **User Roles**: Consider how editors and reviewers will interact
+4. **Future Growth**: Plan for new content types and processes
 
-**Adding Policy Values:**
-` + "```bash\nsecurity-cli policy values create \\\n  --policy-name \"organization.department\" \\\n  --value \"engineering\" \\\n  --active\n```" + `
+**Adding Workflow Stages:**
+` + "```bash\ncontent-cli workflow stages create \\\n  --workflow-name \"blog.publishing\" \\\n  --stage \"peer-review\" \\\n  --active\n```" + `
 
-Remember: Good policy design is crucial for maintainable and performant access control systems.`,
+Remember: Good workflow design is crucial for maintainable and efficient publishing systems.`,
 			},
 
-			"java_integration": {
-				`Here's a complete Java example for encrypting files with a security SDK:
+			"golang_integration": {
+				`Here's a complete Go example for processing orders with an e-commerce SDK:
 
-**Maven Dependency:**
-` + "```xml\n<dependency>\n    <groupId>com.example</groupId>\n    <artifactId>security-sdk</artifactId>\n    <version>1.0.0</version>\n</dependency>\n```" + `
+**Go Module:**
+` + "```bash\ngo mod init your-ecommerce-app\ngo get github.com/example/ecommerce-sdk@v1.2.0\n```" + `
 
-**Encryption Code:**
-` + "```java\nimport com.example.security.sdk.*;\nimport java.io.*;\nimport java.nio.file.*;\n\npublic class FileEncryption {\n    public static void main(String[] args) throws Exception {\n        // Configure SDK\n        SDKConfig config = SDKConfig.builder()\n            .platformEndpoint(\"https://your-platform.com\")\n            .clientId(\"your-client-id\")\n            .clientSecret(\"your-client-secret\")\n            .build();\n            \n        SDK sdk = new SDK(config);\n        \n        // Create encryption config with attributes\n        EncryptionConfig encConfig = EncryptionConfig.builder()\n            .addDataAttribute(\"organization.department\", \"engineering\")\n            .addDataAttribute(\"security.classification\", \"internal\")\n            .build();\n            \n        // Encrypt file\n        Path inputFile = Paths.get(\"sensitive-data.txt\");\n        Path outputFile = Paths.get(\"sensitive-data.enc\");\n        \n        try (InputStream input = Files.newInputStream(inputFile);\n             OutputStream output = Files.newOutputStream(outputFile)) {\n            \n            sdk.encryptFile(input, output, encConfig);\n            System.out.println(\"File encrypted successfully!\");\n        }\n    }\n}\n```" + `
+**Order Processing Code:**
+` + "```go\npackage main\n\nimport (\n    \"fmt\"\n    \"log\"\n    \"github.com/example/ecommerce-sdk\"\n)\n\nfunc main() {\n    // Configure SDK\n    config := ecommerce.Config{\n        PlatformEndpoint: \"https://your-platform.com\",\n        APIKey:          \"your-api-key\",\n        MerchantID:      \"your-merchant-id\",\n    }\n    \n    client, err := ecommerce.New(config)\n    if err != nil {\n        log.Fatal(err)\n    }\n    \n    // Create order with customer details\n    order := &ecommerce.Order{\n        CustomerID: \"customer-123\",\n        Items: []ecommerce.Item{\n            {SKU: \"PROD-001\", Quantity: 2, Price: 29.99},\n            {SKU: \"PROD-002\", Quantity: 1, Price: 15.50},\n        },\n        ShippingAddress: ecommerce.Address{\n            Street: \"123 Main St\",\n            City:   \"Springfield\",\n            State:  \"IL\",\n            ZIP:    \"62701\",\n        },\n    }\n    \n    // Process the order\n    result, err := client.ProcessOrder(order)\n    if err != nil {\n        log.Fatal(err)\n    }\n    \n    fmt.Printf(\"Order processed successfully! Order ID: %s\\n\", result.OrderID)\n}\n```" + `
 
-**Key Security Practices:**
-- Store credentials securely (environment variables or key vault)
-- Use appropriate data attributes for your use case
+**Key Development Practices:**
+- Store API credentials securely (environment variables or vault)
+- Use appropriate order attributes for your business logic
 - Implement proper error handling and logging
-- Validate encryption before deployment
+- Validate order processing before deployment
 
-**Testing the Encryption:**
-` + "```java\n// Verify the encrypted file was created\nFile encFile = new File(\"sensitive-data.enc\");\nif (encFile.exists()) {\n    System.out.println(\"Encrypted file size: \" + encFile.length() + \" bytes\");\n}\n```",
+**Testing the Order Processing:**
+` + "```go\n// Verify the order was processed\nif result.Status == \"confirmed\" {\n    fmt.Printf(\"Order confirmed with total: $%.2f\\n\", result.Total)\n    fmt.Printf(\"Estimated delivery: %s\\n\", result.EstimatedDelivery)\n}\n```",
 
-				`Complete Java encryption implementation with error handling:
+				`Complete Go order processing implementation with error handling:
 
-**Configuration Class:**
-` + "```java\nimport com.example.security.sdk.*;\n\npublic class SecurityConfig {\n    private static final String PLATFORM_URL = System.getenv(\"SECURITY_PLATFORM_URL\");\n    private static final String CLIENT_ID = System.getenv(\"SECURITY_CLIENT_ID\");\n    private static final String CLIENT_SECRET = System.getenv(\"SECURITY_CLIENT_SECRET\");\n    \n    public static SDK createSDK() throws Exception {\n        if (PLATFORM_URL == null || CLIENT_ID == null || CLIENT_SECRET == null) {\n            throw new IllegalStateException(\"Required environment variables not set\");\n        }\n        \n        SDKConfig config = SDKConfig.builder()\n            .platformEndpoint(PLATFORM_URL)\n            .clientId(CLIENT_ID)\n            .clientSecret(CLIENT_SECRET)\n            .build();\n            \n        return new SDK(config);\n    }\n}\n```" + `
+**Configuration Package:**
+` + "```go\npackage config\n\nimport (\n    \"fmt\"\n    \"os\"\n    \"github.com/example/ecommerce-sdk\"\n)\n\ntype Config struct {\n    PlatformURL string\n    APIKey      string\n    MerchantID  string\n    Environment string\n}\n\nfunc LoadFromEnv() (*Config, error) {\n    platformURL := os.Getenv(\"ECOMMERCE_PLATFORM_URL\")\n    apiKey := os.Getenv(\"ECOMMERCE_API_KEY\")\n    merchantID := os.Getenv(\"ECOMMERCE_MERCHANT_ID\")\n    \n    if platformURL == \"\" || apiKey == \"\" || merchantID == \"\" {\n        return nil, fmt.Errorf(\"required environment variables not set\")\n    }\n    \n    return &Config{\n        PlatformURL: platformURL,\n        APIKey:      apiKey,\n        MerchantID:  merchantID,\n        Environment: getEnvOrDefault(\"ECOMMERCE_ENV\", \"production\"),\n    }, nil\n}\n\nfunc getEnvOrDefault(key, defaultValue string) string {\n    if value := os.Getenv(key); value != \"\" {\n        return value\n    }\n    return defaultValue\n}\n```" + `
 
-**Encryption Service:**
-` + "```java\nimport java.util.List;\nimport java.util.Map;\n\npublic class EncryptionService {\n    private final SDK sdk;\n    \n    public EncryptionService() throws Exception {\n        this.sdk = SecurityConfig.createSDK();\n    }\n    \n    public void encryptFile(String inputPath, String outputPath, Map<String, String> attributes) {\n        try {\n            EncryptionConfig.Builder configBuilder = EncryptionConfig.builder();\n            \n            // Add data attributes\n            attributes.forEach(configBuilder::addDataAttribute);\n            \n            EncryptionConfig encConfig = configBuilder.build();\n            \n            // Perform encryption\n            try (InputStream input = Files.newInputStream(Paths.get(inputPath));\n                 OutputStream output = Files.newOutputStream(Paths.get(outputPath))) {\n                \n                sdk.encryptFile(input, output, encConfig);\n                System.out.println(\"Successfully encrypted: \" + inputPath + \" -> \" + outputPath);\n            }\n        } catch (Exception e) {\n            System.err.println(\"Encryption failed: \" + e.getMessage());\n            throw new RuntimeException(\"Encryption failed\", e);\n        }\n    }\n}\n```",
+**Order Processing Service:**
+` + "```go\npackage service\n\nimport (\n    \"fmt\"\n    \"log\"\n    \"your-app/config\"\n    \"github.com/example/ecommerce-sdk\"\n)\n\ntype OrderService struct {\n    client *ecommerce.Client\n}\n\nfunc NewOrderService() (*OrderService, error) {\n    cfg, err := config.LoadFromEnv()\n    if err != nil {\n        return nil, err\n    }\n    \n    client, err := ecommerce.New(ecommerce.Config{\n        PlatformEndpoint: cfg.PlatformURL,\n        APIKey:          cfg.APIKey,\n        MerchantID:      cfg.MerchantID,\n    })\n    if err != nil {\n        return nil, err\n    }\n    \n    return &OrderService{client: client}, nil\n}\n\nfunc (s *OrderService) ProcessOrder(customerID string, items []ecommerce.Item, address ecommerce.Address) (*ecommerce.OrderResult, error) {\n    order := &ecommerce.Order{\n        CustomerID:      customerID,\n        Items:          items,\n        ShippingAddress: address,\n    }\n    \n    result, err := s.client.ProcessOrder(order)\n    if err != nil {\n        log.Printf(\"Order processing failed: %v\", err)\n        return nil, fmt.Errorf(\"order processing failed: %w\", err)\n    }\n    \n    log.Printf(\"Successfully processed order: %s -> %s\", customerID, result.OrderID)\n    return result, nil\n}\n```",
 			},
 
-			"docker_deploy": {
-				`Here's a comprehensive guide to deploying security platforms with Docker:
+			"container_deploy": {
+				`Here's a comprehensive guide to deploying web applications with Docker:
 
 **Docker Compose Setup:**
-` + "```yaml\nversion: '3.8'\nservices:\n  security-platform:\n    image: example/security-platform:latest\n    ports:\n      - \"8080:8080\"\n    environment:\n      - DATABASE_URL=postgresql://postgres:password@db:5432/security\n      - OIDC_ISSUER=https://your-identity-provider.com\n      - KEY_SERVICE_ENDPOINT=https://your-key-service.com\n    depends_on:\n      - db\n      - key-service\n      \n  key-service:\n    image: example/key-service:latest\n    ports:\n      - \"8000:8000\"\n    environment:\n      - DATABASE_URL=postgresql://postgres:password@db:5432/keys\n      - PLATFORM_ENDPOINT=http://security-platform:8080\n    depends_on:\n      - db\n      \n  db:\n    image: postgres:15\n    environment:\n      - POSTGRES_DB=security\n      - POSTGRES_USER=postgres\n      - POSTGRES_PASSWORD=password\n    volumes:\n      - postgres_data:/var/lib/postgresql/data\n      \nvolumes:\n  postgres_data:\n```" + `
+` + "```yaml\nversion: '3.8'\nservices:\n  webapp:\n    image: example/webapp:latest\n    ports:\n      - \"8080:8080\"\n    environment:\n      - DATABASE_URL=postgresql://postgres:password@db:5432/webapp\n      - REDIS_URL=redis://cache:6379\n      - API_ENDPOINT=https://api.example.com\n    depends_on:\n      - db\n      - cache\n      \n  api-service:\n    image: example/api-service:latest\n    ports:\n      - \"8000:8000\"\n    environment:\n      - DATABASE_URL=postgresql://postgres:password@db:5432/webapp\n      - WEBAPP_ENDPOINT=http://webapp:8080\n    depends_on:\n      - db\n      \n  db:\n    image: postgres:15\n    environment:\n      - POSTGRES_DB=webapp\n      - POSTGRES_USER=postgres\n      - POSTGRES_PASSWORD=password\n    volumes:\n      - postgres_data:/var/lib/postgresql/data\n      \n  cache:\n    image: redis:7-alpine\n    ports:\n      - \"6379:6379\"\n      \nvolumes:\n  postgres_data:\n```" + `
 
 **Quick Start Commands:**
-` + "```bash\n# Clone and start\ngit clone https://github.com/example/security-platform.git\ncd security-platform\n\n# Start all services\ndocker-compose up -d\n\n# Check service health\ndocker-compose ps\n\n# View logs\ndocker-compose logs -f security-platform\n```" + `
+` + "```bash\n# Clone and start\ngit clone https://github.com/example/webapp.git\ncd webapp\n\n# Start all services\ndocker-compose up -d\n\n# Check service health\ndocker-compose ps\n\n# View logs\ndocker-compose logs -f webapp\n```" + `
 
 **Configuration:**
-1. **Environment Variables**: Update OIDC_ISSUER for your identity provider
+1. **Environment Variables**: Update API_ENDPOINT for your backend services
 2. **Networking**: Ensure services can communicate
 3. **Persistence**: Database data is persisted in volumes
-4. **Security**: Change default passwords in production
+4. **Performance**: Configure Redis cache for optimal performance
 
 **Verification:**
-` + "```bash\n# Test platform health\ncurl http://localhost:8080/health\n\n# Test key service health\ncurl http://localhost:8000/health\n\n# Check database connection\ndocker-compose exec db psql -U postgres -d security -c \"\\dt\"\n```" + `
+` + "```bash\n# Test webapp health\ncurl http://localhost:8080/health\n\n# Test API service health\ncurl http://localhost:8000/health\n\n# Check database connection\ndocker-compose exec db psql -U postgres -d webapp -c \"\\dt\"\n\n# Test Redis cache\ndocker-compose exec cache redis-cli ping\n```" + `
 
 **Production Considerations:**
 - Use environment-specific configuration files
 - Implement proper secrets management
 - Set up monitoring and logging
 - Configure backup strategies
-- Use reverse proxy (nginx) for SSL termination`,
+- Use reverse proxy (nginx) for SSL termination and load balancing`,
 			},
 
-			"troubleshooting": {
-				`When troubleshooting encryption permission errors, follow this systematic approach:
+			"debugging": {
+				`When debugging API integration errors, follow this systematic approach:
 
 **1. Verify Authentication:**
-` + "```bash\n# Check if credentials are valid\nsecurity-cli auth login --platform-endpoint https://your-platform.com\n\n# Verify token\nsecurity-cli auth print-access-token\n```" + `
+` + "```bash\n# Check if API credentials are valid\napi-cli auth test --endpoint https://api.your-platform.com\n\n# Verify API key status\napi-cli auth status --api-key your-api-key\n```" + `
 
-**2. Check Attribute Assignments:**
-` + "```bash\n# List user's attributes\nsecurity-cli policy user-attributes list --user-id your-user-id\n\n# Verify required attributes exist\nsecurity-cli policy attributes list --policy-name organization.department\n```" + `
+**2. Check Request Configuration:**
+` + "```bash\n# Test basic connectivity\ncurl -H \"Authorization: Bearer your-token\" https://api.your-platform.com/health\n\n# Verify endpoint configuration\napi-cli config get --endpoint\n```" + `
 
-**3. Validate Policy Configuration:**
-` + "```bash\n# Check policy rules\nsecurity-cli policy get --name organization.department\n\n# Verify attribute values are active\nsecurity-cli policy values get --policy-name organization.department --value engineering\n```" + `
+**3. Validate Request Format:**
+` + "```bash\n# Check request schema\napi-cli schema validate --request-type orders\n\n# Test with minimal payload\napi-cli orders create --test-mode --customer-id test-123\n```" + `
 
-**4. Debug Encryption Process:**
-- **Check attribute syntax**: Ensure attribute names match exactly
-- **Verify permissions**: User must have attributes required by policy
-- **Test with minimal attributes**: Start with simple attribute set
-- **Check network connectivity**: Ensure key service is reachable
+**4. Debug API Request Process:**
+- **Check request syntax**: Ensure JSON structure matches API schema
+- **Verify permissions**: API key must have required scopes
+- **Test with minimal payload**: Start with simple request structure
+- **Check network connectivity**: Ensure API endpoint is reachable
 
 **5. Common Issues & Solutions:**
 
-**Permission Denied:**
-- User lacks required attributes
-- Policy doesn't exist
-- Incorrect attribute syntax in encryption request
+**Authentication Failed:**
+- API key expired or invalid
+- Missing required authentication headers
+- Incorrect endpoint URL in request
 
 **Network Errors:**
-- Key service endpoint unreachable
+- API endpoint unreachable
 - Certificate validation failures
-- Firewall blocking connections
+- Rate limiting or throttling
 
 **Configuration Issues:**
 - Missing environment variables
-- Incorrect platform endpoint
-- Invalid client credentials
+- Incorrect API endpoint URL
+- Invalid request format or content-type
 
 **Debugging Commands:**
-` + "```bash\n# Enable verbose logging\nexport SECURITY_CLI_LOG_LEVEL=debug\n\n# Test simple encryption\nsecurity-cli encrypt --file test.txt --output test.enc --attributes \"organization.department=engineering\"\n\n# Check key service health\ncurl https://your-key-service.com/health\n```" + `
+` + "```bash\n# Enable verbose logging\nexport API_CLI_LOG_LEVEL=debug\n\n# Test simple API call\napi-cli orders list --limit 1 --verbose\n\n# Check API service health\ncurl https://api.your-platform.com/health\n\n# Test connectivity\nping api.your-platform.com\n```" + `
 
 **Log Analysis:**
 Look for specific error patterns in logs:
-- Authentication failures
-- Attribute resolution errors  
-- Network timeouts
-- Policy evaluation denials`,
+- Authentication failures (401, 403)
+- Request format errors (400, 422)
+- Network timeouts (504, connection refused)
+- Rate limiting errors (429)`,
 			},
 
 			"default": {
-				`This is a comprehensive response demonstrating the capabilities of modern security platforms and evaluation systems.
+				`This is a comprehensive response demonstrating the capabilities of modern application platforms and integration systems.
 
-**Security Platform Overview:**
-Modern security platforms provide comprehensive data protection through encryption, access controls, and policy enforcement mechanisms.
+**Application Platform Overview:**
+Modern application platforms provide comprehensive workflow management through APIs, integrations, and automated processing mechanisms.
 
 **Key Features:**
-- Embedded access policies that travel with encrypted data
-- Fine-grained permissions based on user and data attributes
-- Multiple format support for different use cases
-- Cross-platform SDK support (Java, Go, JavaScript, Python)
-- Enterprise-ready with audit trails and compliance support
+- RESTful APIs that connect with various data sources and services
+- Flexible configuration based on business requirements and workflows
+- Multiple format support for different integration patterns
+- Cross-platform SDK support (Java, Go, JavaScript, Python, .NET)
+- Enterprise-ready with monitoring, logging, and analytics support
 
 **Common Use Cases:**
-1. **Secure Document Sharing**: Share sensitive documents across organizational boundaries
-2. **Data Lake Protection**: Implement granular access controls in big data environments
-3. **Compliance**: Meet regulatory requirements (GDPR, HIPAA, SOX)
-4. **Zero-Trust Architecture**: Implement data-centric security models
+1. **E-commerce Integration**: Connect inventory, payment, and shipping systems
+2. **Content Management**: Automated publishing workflows and content distribution
+3. **Data Processing**: ETL pipelines and real-time data transformation
+4. **Healthcare Systems**: Patient data management and clinical workflows
+5. **Financial Services**: Transaction processing and regulatory reporting
 
 **Getting Started:**
-1. Install security CLI tool
-2. Configure authentication with your security platform
-3. Create access control policies
-4. Encrypt data with appropriate attributes
-5. Share encrypted data securely
+1. Install platform CLI tool or SDK
+2. Configure authentication with your platform endpoint
+3. Create workflow definitions and business rules
+4. Process data with appropriate transformations
+5. Monitor and optimize system performance
 
 **Best Practices:**
-- Design attribute hierarchies that align with organizational structure
-- Implement least-privilege access principles
-- Regular audit of attribute assignments and policy effectiveness
+- Design workflows that align with business processes
+- Implement proper error handling and retry mechanisms
+- Regular monitoring of system performance and usage patterns
 - Use environment-specific configurations for different deployment stages
-- Monitor access patterns and policy evaluation performance
+- Implement comprehensive logging and observability
 
-For specific implementation guidance, please ask about particular aspects like policy design, SDK integration, or deployment strategies.`,
+For specific implementation guidance, please ask about particular aspects like workflow design, API integration, or deployment strategies.`,
 			},
 		},
 		currentIndex: make(map[string]int),
@@ -296,16 +297,16 @@ func (m *RealisticMockEngine) generateContextualResponse(query string) string {
 	// Determine response category based on query content
 	var category string
 	switch {
-	case strings.Contains(queryLower, "what is") && (strings.Contains(queryLower, "security") || strings.Contains(queryLower, "data protection")):
-		category = "data_security_concept"
-	case strings.Contains(queryLower, "policy") && strings.Contains(queryLower, "create"):
-		category = "policy_management"
-	case strings.Contains(queryLower, "java") && (strings.Contains(queryLower, "encrypt") || strings.Contains(queryLower, "code")):
-		category = "java_integration"
+	case strings.Contains(queryLower, "what is") && (strings.Contains(queryLower, "ecommerce") || strings.Contains(queryLower, "platform") || strings.Contains(queryLower, "inventory")):
+		category = "ecommerce_platform"
+	case strings.Contains(queryLower, "workflow") && strings.Contains(queryLower, "create"):
+		category = "content_management"
+	case strings.Contains(queryLower, "go") && (strings.Contains(queryLower, "order") || strings.Contains(queryLower, "code") || strings.Contains(queryLower, "integration")):
+		category = "golang_integration"
 	case strings.Contains(queryLower, "docker") && strings.Contains(queryLower, "deploy"):
-		category = "docker_deploy"
-	case strings.Contains(queryLower, "permission") && strings.Contains(queryLower, "error"):
-		category = "troubleshooting"
+		category = "container_deploy"
+	case (strings.Contains(queryLower, "error") || strings.Contains(queryLower, "debug")) && (strings.Contains(queryLower, "api") || strings.Contains(queryLower, "integration")):
+		category = "debugging"
 	default:
 		category = "default"
 	}
