@@ -240,13 +240,14 @@ func (c *Client) safeInference(messages []Message, callback StreamCallback) (*Re
 	}
 
 	duration := time.Since(start)
+	now := time.Now()
 
 	response := &Response{
 		Content:      content,
 		Tokens:       c.estimateTokens(content),
 		Duration:     duration,
 		Model:        c.config.Model,
-		Timestamp:    time.Now(),
+		Timestamp:    &now,
 		FinishReason: "stop",
 	}
 

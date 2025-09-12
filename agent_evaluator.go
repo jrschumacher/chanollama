@@ -45,8 +45,8 @@ func (ae *AgentEvaluator) LoadAgentsFromDirectory(dirPath string) error {
 }
 
 // loadAgentsFromFiles loads agents from markdown files in the given directory
-func (ae *AgentEvaluator) loadAgentsFromFiles(dirPath string) error {
-	// This method would use the pkg/llm agent loader
+func (ae *AgentEvaluator) loadAgentsFromFiles(_ string) error {
+	// This method would use the pkg/llm agent loader  
 	// For now, fallback to programmatic loading
 	return ae.loadCoreAgents()
 }
@@ -147,13 +147,39 @@ Provide clear explanations of security platform concepts, architecture, and stra
 
 // EvaluateQuery analyzes a user query and returns the best agent token
 func (ae *AgentEvaluator) EvaluateQuery(ctx context.Context, query string) (string, error) {
-	// Always use keyword-based evaluation to avoid context issues
-	// The agent selection doesn't need LLM-level accuracy and keyword matching is reliable
+	// Use LLM-based evaluation if enabled and engine is available
+	if !ae.disableLLMEval && ae.engine != nil {
+		return ae.llmBasedEvaluation(ctx, query)
+	}
+	
+	// Fallback to keyword-based evaluation
 	return ae.keywordBasedEvaluation(query), nil
 }
 
+// llmBasedEvaluation uses the LLM engine to intelligently select the best agent
+func (ae *AgentEvaluator) llmBasedEvaluation(ctx context.Context, query string) (string, error) {
+	prompt := ae.buildEvaluationPrompt(query)
+	messages := []Message{NewUserMessage(prompt)}
+	
+	// For now, use the basic Chat method since we have an Engine interface
+	// TODO: In a more complete implementation, this would use a context-aware method with timeout
+	response, err := ae.engine.Chat(messages)
+	if err != nil {
+		// Fallback to keyword-based evaluation on error
+		return ae.keywordBasedEvaluation(query), nil
+	}
+	
+	// Parse the agent token from response
+	token := ae.parseAgentToken(response.Content)
+	if token == "" {
+		// Fallback to keyword-based evaluation if parsing fails
+		return ae.keywordBasedEvaluation(query), nil
+	}
+	
+	return token, nil
+}
+
 // buildEvaluationPrompt creates the prompt for agent evaluation
-//nolint:unused
 func (ae *AgentEvaluator) buildEvaluationPrompt(query string) string {
 	return `Route this query to the best agent. Return only one word:
 
@@ -174,7 +200,6 @@ Agent:`
 }
 
 // parseAgentToken extracts the agent token from the LLM response
-//nolint:unused
 func (ae *AgentEvaluator) parseAgentToken(response string) string {
 	// Clean up the response
 	token := strings.TrimSpace(strings.ToLower(response))

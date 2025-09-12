@@ -19,16 +19,17 @@ var (
 type Message struct {
 	Role      string            `json:"role"` // "system", "user", "assistant"
 	Content   string            `json:"content"`
-	Timestamp time.Time         `json:"timestamp,omitempty"`
+	Timestamp *time.Time        `json:"timestamp,omitempty"`
 	Metadata  map[string]string `json:"metadata,omitempty"`
 }
 
 // NewMessage creates a new message with timestamp
 func NewMessage(role, content string) Message {
+	now := time.Now()
 	return Message{
 		Role:      role,
 		Content:   content,
-		Timestamp: time.Now(),
+		Timestamp: &now,
 		Metadata:  make(map[string]string),
 	}
 }
@@ -88,10 +89,10 @@ func (m Message) IsSystem() bool {
 
 // Age returns how long ago the message was created
 func (m Message) Age() time.Duration {
-	if m.Timestamp.IsZero() {
+	if m.Timestamp == nil {
 		return 0
 	}
-	return time.Since(m.Timestamp)
+	return time.Since(*m.Timestamp)
 }
 
 // String returns a string representation of the message
@@ -106,16 +107,17 @@ type Response struct {
 	Tokens       int               `json:"tokens,omitempty"`
 	Duration     time.Duration     `json:"duration,omitempty"`
 	Model        string            `json:"model,omitempty"`
-	Timestamp    time.Time         `json:"timestamp,omitempty"`
+	Timestamp    *time.Time        `json:"timestamp,omitempty"`
 	Metadata     map[string]string `json:"metadata,omitempty"`
 	FinishReason string            `json:"finish_reason,omitempty"` // "stop", "length", "error"
 }
 
 // NewResponse creates a new response with timestamp
 func NewResponse(content string) *Response {
+	now := time.Now()
 	return &Response{
 		Content:   content,
-		Timestamp: time.Now(),
+		Timestamp: &now,
 		Metadata:  make(map[string]string),
 	}
 }
