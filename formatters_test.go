@@ -353,8 +353,8 @@ func TestFormatDuration(t *testing.T) {
 	}
 
 	// Test sub-millisecond
-	subMs := time.Microsecond * 500 // 0.5ms
-	result = FormatDuration(subMs)
+	subMillisecond := time.Microsecond * 500 // 0.5ms
+	result = FormatDuration(subMillisecond)
 	if !strings.Contains(result, "ms") {
 		t.Errorf("Sub-millisecond should be formatted as ms, got %s", result)
 	}

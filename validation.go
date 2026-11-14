@@ -418,7 +418,7 @@ func (fv *FileValidator) checkFileAccess(path string) error {
 	if err != nil {
 		return fmt.Errorf("file is not readable: %w", err)
 	}
-	file.Close()
+	_ = file.Close()
 
 	return nil
 }

@@ -167,7 +167,7 @@ func (as *AutoSummarizer) buildSummaryPrompt(messages []Message, context string)
 
 	// Add context if available
 	if context != "" {
-		prompt.WriteString(fmt.Sprintf("Context: %s\n\n", context))
+		fmt.Fprintf(&prompt, "Context: %s\n\n", context)
 	}
 
 	prompt.WriteString("Conversation to summarize:\n")
@@ -185,7 +185,7 @@ func (as *AutoSummarizer) buildSummaryPrompt(messages []Message, context string)
 			content = content[:300] + "..."
 		}
 
-		prompt.WriteString(fmt.Sprintf("%d. %s: %s\n", i+1, speaker, content))
+		fmt.Fprintf(&prompt, "%d. %s: %s\n", i+1, speaker, content)
 	}
 
 	prompt.WriteString("\nSummary:")
@@ -297,17 +297,17 @@ func (sc *SmartConversation) AddAssistantMessage(content string) error {
 
 // checkAndSummarize checks if summarization is needed and applies it
 func (sc *SmartConversation) checkAndSummarize() error {
-	currentTokens := sc.Conversation.EstimateTokens()
+	currentTokens := sc.EstimateTokens()
 	contextUsage := CalculateContextUsage(currentTokens, sc.tokenLimit)
 
 	if sc.summarizer.ShouldSummarize(contextUsage) {
-		summary, err := sc.summarizer.SummarizeConversation(sc.Conversation.Messages, sc.context)
+		summary, err := sc.summarizer.SummarizeConversation(sc.Messages, sc.context)
 		if err != nil {
 			return fmt.Errorf("auto-summarization failed: %w", err)
 		}
 
 		// Apply the summary
-		sc.Conversation.Messages = sc.summarizer.ApplySummary(sc.Conversation.Messages, summary)
+		sc.Messages = sc.summarizer.ApplySummary(sc.Messages, summary)
 
 		return nil
 	}
@@ -317,6 +317,6 @@ func (sc *SmartConversation) checkAndSummarize() error {
 
 // GetContextUsage returns current context usage statistics
 func (sc *SmartConversation) GetContextUsage() ContextUsage {
-	currentTokens := sc.Conversation.EstimateTokens()
+	currentTokens := sc.EstimateTokens()
 	return CalculateContextUsage(currentTokens, sc.tokenLimit)
 }

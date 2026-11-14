@@ -27,7 +27,7 @@ func main() {
 
 	// Create client
 	client := chanollama.New(modelPath)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Create a conversation with history management
 	conversation := chanollama.NewConversation()

@@ -464,7 +464,7 @@ func (s *SimpleRAGStore) calculateScore(queryWords []string, doc Document) float
 
 	// Calculate score based on common words
 	var score float32
-	var totalQueryWords float32 = float32(len(queryWords))
+	totalQueryWords := float32(len(queryWords))
 
 	for word, qCount := range queryWordCount {
 		if dCount, exists := docWordCount[word]; exists {
@@ -579,7 +579,7 @@ func ExtractKeywordsWithConfig(text string, config StopwordsConfig) []string {
 
 	// Split into words and filter
 	words := strings.FieldsFunc(text, func(c rune) bool {
-		return !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))
+		return (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9')
 	})
 
 	filtered := make([]string, 0)
@@ -637,11 +637,11 @@ func BuildRAGContext(query string, results []SimilarityResult, maxTokens int) RA
 			break
 		}
 
-		contextBuilder.WriteString(fmt.Sprintf("## %s\n", result.Document.Title))
+		fmt.Fprintf(&contextBuilder, "## %s\n", result.Document.Title)
 		if result.Document.URL != "" {
-			contextBuilder.WriteString(fmt.Sprintf("**Source:** %s\n", result.Document.URL))
+			fmt.Fprintf(&contextBuilder, "**Source:** %s\n", result.Document.URL)
 		}
-		contextBuilder.WriteString(fmt.Sprintf("**Relevance:** %.3f\n\n", result.Similarity))
+		fmt.Fprintf(&contextBuilder, "**Relevance:** %.3f\n\n", result.Similarity)
 		contextBuilder.WriteString(result.Document.Content)
 		contextBuilder.WriteString("\n\n---\n\n")
 
@@ -672,11 +672,11 @@ func BuildSimpleRAGContext(query string, results []SearchResult, maxTokens int) 
 			break
 		}
 
-		contextBuilder.WriteString(fmt.Sprintf("## %s\n", result.Document.Title))
+		fmt.Fprintf(&contextBuilder, "## %s\n", result.Document.Title)
 		if result.Document.URL != "" {
-			contextBuilder.WriteString(fmt.Sprintf("**Source:** %s\n", result.Document.URL))
+			fmt.Fprintf(&contextBuilder, "**Source:** %s\n", result.Document.URL)
 		}
-		contextBuilder.WriteString(fmt.Sprintf("**Relevance:** %.3f\n\n", result.Score))
+		fmt.Fprintf(&contextBuilder, "**Relevance:** %.3f\n\n", result.Score)
 		contextBuilder.WriteString(result.Document.Content)
 		contextBuilder.WriteString("\n\n---\n\n")
 

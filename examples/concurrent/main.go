@@ -28,7 +28,7 @@ func main() {
 
 	// Create a simple client for sequential streaming
 	client := chanollama.New(modelPath)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Example 1: Multiple sequential conversations
 	fmt.Println("🔄 Starting 3 sequential conversations...")

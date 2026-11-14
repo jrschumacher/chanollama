@@ -72,7 +72,7 @@ func demonstrateSingleQueryEvaluation() error {
 			AgentMode: false,
 			EvalMode:  "offline-demonstration",
 		})
-	defer evaluator.Close()
+	defer func() { _ = evaluator.Close() }()
 
 	// Evaluate a query
 	query := "How do I encrypt data securely?"
@@ -142,7 +142,7 @@ func demonstrateCustomScoring() error {
 	// Create evaluator with custom scoring
 	evaluator := chanollama.NewEvaluator(engine, false).
 		WithScoringFunction(securityScoringFunc)
-	defer evaluator.Close()
+	defer func() { _ = evaluator.Close() }()
 
 	// Test with security-related query
 	query := "What are the best practices for API authentication?"
@@ -196,7 +196,7 @@ func demonstrateTestSuiteEvaluation() error {
 	// Create evaluator
 	engine := &MockEngine{}
 	evaluator := chanollama.NewEvaluator(engine, false)
-	defer evaluator.Close()
+	defer func() { _ = evaluator.Close() }()
 
 	// Run test suite
 	summary, err := evaluator.EvaluateSuite(suite)
@@ -398,7 +398,9 @@ func containsIgnoreCase(text, substr string) bool {
 	return strings.Contains(strings.ToLower(text), strings.ToLower(substr))
 }
 
-// Example of saving results to file for baseline comparison
+// Example of saving results to file for baseline comparison (shown in README.md).
+//
+//nolint:unused // kept as a documented example
 func saveResultsToFile(summary chanollama.EvalSummary, filename string) error {
 	data, err := json.MarshalIndent(summary, "", "  ")
 	if err != nil {
@@ -407,7 +409,9 @@ func saveResultsToFile(summary chanollama.EvalSummary, filename string) error {
 	return os.WriteFile(filename, data, 0644)
 }
 
-// Example of loading baseline from file
+// Example of loading baseline from file (shown in README.md).
+//
+//nolint:unused // kept as a documented example
 func loadBaselineFromFile(filename string) (chanollama.EvalSummary, error) {
 	var summary chanollama.EvalSummary
 	data, err := os.ReadFile(filename)

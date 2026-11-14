@@ -27,7 +27,7 @@ func main() {
 
 	// Create a streaming client with model
 	client := chanollama.New(modelPath)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	fmt.Println("✅ Engine ready")
 

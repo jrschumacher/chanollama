@@ -1,0 +1,10 @@
+version: 1
+
+ci:
+  test:
+    coverage:
+      # No coverage gate yet; re-enable with a threshold once coverage improves.
+      enabled: false
+  benchmark:
+    # The repo has no benchmarks yet.
+    enabled: false
