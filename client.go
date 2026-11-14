@@ -86,7 +86,7 @@ func (c *Client) Initialize() error {
 
 	// Restore stderr for our application logs
 	if !c.config.Verbose {
-		devNull.Close()
+		_ = devNull.Close()
 		os.Stderr = oldStderr
 	}
 
@@ -108,7 +108,7 @@ func (c *Client) Initialize() error {
 
 	// Restore stderr
 	if !c.config.Verbose {
-		devNull.Close()
+		_ = devNull.Close()
 		os.Stderr = oldStderr
 	}
 
@@ -143,7 +143,7 @@ func (c *Client) Initialize() error {
 
 	// Restore stderr
 	if !c.config.Verbose {
-		devNull.Close()
+		_ = devNull.Close()
 		os.Stderr = oldStderr
 	}
 
@@ -489,7 +489,7 @@ func (c *Client) createSamplingContext(samplingParams llama.SamplingParams) (*ll
 		sampler, err := llama.NewSamplingContext(c.model, samplingParams)
 
 		// Restore stderr
-		devNull.Close()
+		_ = devNull.Close()
 		os.Stderr = oldStderr
 
 		return sampler, err
@@ -505,11 +505,11 @@ func (c *Client) buildPrompt(messages []Message) string {
 	for _, msg := range messages {
 		switch msg.Role {
 		case "system":
-			prompt.WriteString(fmt.Sprintf("System: %s\n\n", msg.Content))
+			fmt.Fprintf(&prompt, "System: %s\n\n", msg.Content)
 		case "user":
-			prompt.WriteString(fmt.Sprintf("User: %s\n\n", msg.Content))
+			fmt.Fprintf(&prompt, "User: %s\n\n", msg.Content)
 		case "assistant":
-			prompt.WriteString(fmt.Sprintf("Assistant: %s\n\n", msg.Content))
+			fmt.Fprintf(&prompt, "Assistant: %s\n\n", msg.Content)
 		}
 	}
 

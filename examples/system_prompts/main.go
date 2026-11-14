@@ -27,7 +27,7 @@ func main() {
 
 	// Create client
 	client := chanollama.New(modelPath)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Example 1: Coding Assistant
 	fmt.Println("\n👨‍💻 Coding Assistant:")

@@ -136,7 +136,7 @@ func parseMetadata(filePath string) (TestMetadata, error) {
 	if err != nil {
 		return metadata, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	scanner := bufio.NewScanner(file)
 	inMetadata := false
@@ -246,7 +246,7 @@ func runWithTimeout(cmd *exec.Cmd, timeout time.Duration) (string, error) {
 	case err := <-errChan:
 		return "", err
 	case <-time.After(timeout):
-		cmd.Process.Kill()
+		_ = cmd.Process.Kill()
 		return "", fmt.Errorf("command timed out after %v", timeout)
 	}
 }

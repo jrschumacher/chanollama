@@ -24,7 +24,7 @@ func main() {
 
 	// Create a new client with model file path
 	client := chanollama.New(modelPath)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Make a simple chat request
 	response, err := client.Chat([]chanollama.Message{

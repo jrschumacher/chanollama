@@ -24,7 +24,7 @@ func main() {
 
 	// Create a new client for managing chat history
 	client := chanollama.New(modelPath)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Start a conversation with message history
 	messages := []chanollama.Message{}

@@ -27,16 +27,16 @@ func NewDetailedFormatter(title string) *DetailedFormatter {
 func (f *DetailedFormatter) FormatSingleResult(result EvalResult) string {
 	var output strings.Builder
 
-	output.WriteString(fmt.Sprintf("🔍 Query: %s\n", result.Query))
+	fmt.Fprintf(&output, "🔍 Query: %s\n", result.Query)
 	if result.SelectedAgent != "" {
-		output.WriteString(fmt.Sprintf("🤖 Agent: %s\n", result.SelectedAgent))
+		fmt.Fprintf(&output, "🤖 Agent: %s\n", result.SelectedAgent)
 	}
-	output.WriteString(fmt.Sprintf("📏 Length: %d chars, %d words\n",
-		result.Metrics.ResponseLength, result.Metrics.WordCount))
-	output.WriteString(fmt.Sprintf("⏱️  Time: %v\n", result.ResponseTime))
-	output.WriteString(fmt.Sprintf("📊 Quality Score: %.2f/10\n", result.QualityScore))
-	output.WriteString(fmt.Sprintf("   Helpfulness: %.1f | Completeness: %.1f | Actionable: %.1f\n",
-		result.Metrics.HelpfulnessScore, result.Metrics.CompletenessScore, result.Metrics.ActionabilityScore))
+	fmt.Fprintf(&output, "📏 Length: %d chars, %d words\n",
+		result.Metrics.ResponseLength, result.Metrics.WordCount)
+	fmt.Fprintf(&output, "⏱️  Time: %v\n", result.ResponseTime)
+	fmt.Fprintf(&output, "📊 Quality Score: %.2f/10\n", result.QualityScore)
+	fmt.Fprintf(&output, "   Helpfulness: %.1f | Completeness: %.1f | Actionable: %.1f\n",
+		result.Metrics.HelpfulnessScore, result.Metrics.CompletenessScore, result.Metrics.ActionabilityScore)
 
 	return output.String()
 }
@@ -50,20 +50,20 @@ func (f *DetailedFormatter) FormatSummary(summary EvalSummary) string {
 		title = "LLM Evaluation Summary"
 	}
 
-	output.WriteString(fmt.Sprintf("\n📊 %s\n", title))
+	fmt.Fprintf(&output, "\n📊 %s\n", title)
 	output.WriteString(strings.Repeat("═", len(title)+4) + "\n")
-	output.WriteString(fmt.Sprintf("Tests: %d total, %d passed, %d failed\n",
-		summary.TotalTests, summary.PassedTests, summary.FailedTests))
-	output.WriteString(fmt.Sprintf("Average Quality Score: %.2f/10\n", summary.AverageScore))
-	output.WriteString(fmt.Sprintf("Average Response Length: %.0f characters\n", summary.AverageLength))
-	output.WriteString(fmt.Sprintf("Average Response Time: %v\n", summary.AverageTime))
+	fmt.Fprintf(&output, "Tests: %d total, %d passed, %d failed\n",
+		summary.TotalTests, summary.PassedTests, summary.FailedTests)
+	fmt.Fprintf(&output, "Average Quality Score: %.2f/10\n", summary.AverageScore)
+	fmt.Fprintf(&output, "Average Response Length: %.0f characters\n", summary.AverageLength)
+	fmt.Fprintf(&output, "Average Response Time: %v\n", summary.AverageTime)
 
 	if summary.AgentAccuracy > 0 {
-		output.WriteString(fmt.Sprintf("Agent Routing Accuracy: %.1f%%\n", summary.AgentAccuracy))
+		fmt.Fprintf(&output, "Agent Routing Accuracy: %.1f%%\n", summary.AgentAccuracy)
 	}
 
 	passRate := float64(summary.PassedTests) / float64(summary.TotalTests) * 100
-	output.WriteString(fmt.Sprintf("Pass Rate: %.1f%%\n", passRate))
+	fmt.Fprintf(&output, "Pass Rate: %.1f%%\n", passRate)
 
 	// Quality assessment
 	output.WriteString("\n🎯 Quality Assessment:\n")
@@ -90,8 +90,8 @@ func (f *DetailedFormatter) FormatProgress(results []EvalResult) string {
 		if result.QualityScore < 6.0 {
 			status = "⚠️ "
 		}
-		output.WriteString(fmt.Sprintf("  [%d] %s %.1f/10 - %s\n", i+1, status, result.QualityScore,
-			truncateString(result.Query, 60)))
+		fmt.Fprintf(&output, "  [%d] %s %.1f/10 - %s\n", i+1, status, result.QualityScore,
+			truncateString(result.Query, 60))
 	}
 
 	return output.String()
@@ -105,17 +105,17 @@ func (f *DetailedFormatter) FormatDetailedResults(results []EvalResult) string {
 	output.WriteString(strings.Repeat("═", 25) + "\n\n")
 
 	for i, result := range results {
-		output.WriteString(fmt.Sprintf("[%d] \n", i+1))
-		output.WriteString(fmt.Sprintf("    Query: %s\n", result.Query))
+		fmt.Fprintf(&output, "[%d] \n", i+1)
+		fmt.Fprintf(&output, "    Query: %s\n", result.Query)
 		if result.SelectedAgent != "" {
-			output.WriteString(fmt.Sprintf("    Agent: %s\n", result.SelectedAgent))
+			fmt.Fprintf(&output, "    Agent: %s\n", result.SelectedAgent)
 		}
-		output.WriteString(fmt.Sprintf("    Score: %.1f/10 | Length: %d chars | Time: %v\n",
-			result.QualityScore, result.Metrics.ResponseLength, result.ResponseTime))
-		output.WriteString(fmt.Sprintf("    Quality: Help %.1f | Complete %.1f | Actionable %.1f\n",
-			result.Metrics.HelpfulnessScore, result.Metrics.CompletenessScore, result.Metrics.ActionabilityScore))
-		output.WriteString(fmt.Sprintf("    Content: %d code examples, %d commands, %d links\n\n",
-			result.Metrics.CodeExampleCount, result.Metrics.CommandCount, result.Metrics.LinkCount))
+		fmt.Fprintf(&output, "    Score: %.1f/10 | Length: %d chars | Time: %v\n",
+			result.QualityScore, result.Metrics.ResponseLength, result.ResponseTime)
+		fmt.Fprintf(&output, "    Quality: Help %.1f | Complete %.1f | Actionable %.1f\n",
+			result.Metrics.HelpfulnessScore, result.Metrics.CompletenessScore, result.Metrics.ActionabilityScore)
+		fmt.Fprintf(&output, "    Content: %d code examples, %d commands, %d links\n\n",
+			result.Metrics.CodeExampleCount, result.Metrics.CommandCount, result.Metrics.LinkCount)
 	}
 
 	return output.String()

@@ -16,16 +16,18 @@ jobs:
     name: Validate
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Validate Project
-        uses: jrschumacher/go-actions/self-validate@v1
+        uses: jrschumacher/go-actions/self-validate@v3
 
   test:
     name: Test
     runs-on: ubuntu-latest
     needs: validate
     steps:
+      - uses: actions/checkout@v4
       - name: Run Tests
-        uses: jrschumacher/go-actions/ci@v1
+        uses: jrschumacher/go-actions/ci@v3
         with:
           job: test
           go-version: '1.24'
@@ -35,31 +37,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: validate
     steps:
+      - uses: actions/checkout@v4
       - name: Run Linting
-        uses: jrschumacher/go-actions/ci@v1
+        uses: jrschumacher/go-actions/ci@v3
         with:
           job: lint
           go-version: '1.24'
-
-  benchmark:
-    name: Benchmark
-    runs-on: ubuntu-latest
-    needs: validate
-    if: github.event_name == 'pull_request'
-    steps:
-      - name: Run Benchmarks
-        uses: jrschumacher/go-actions/ci@v1
-        with:
-          job: benchmark
-          go-version: '1.24'
-
-  comment:
-    name: Comment
-    runs-on: ubuntu-latest
-    needs: [test, lint, benchmark]
-    if: always() && github.event_name == 'pull_request'
-    steps:
-      - name: Comment Results
-        uses: jrschumacher/go-actions/ci@v1
-        with:
-          job: comment

@@ -24,7 +24,7 @@ func main() {
 
 	// Create client with model path (advanced configuration can be added later)
 	client := chanollama.New(modelPath)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Example of using the engine with streaming
 	messages := []chanollama.Message{
